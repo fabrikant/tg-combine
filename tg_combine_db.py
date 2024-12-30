@@ -1,4 +1,4 @@
-from keys import ADMIN_ID
+from keys import ADMIN_ID, ADMIN_NAME
 from sqlalchemy import (
     Column,
     Integer,
@@ -17,9 +17,10 @@ Base = declarative_base()
 
 class Users(Base):
     __tablename__ = "users"
-    id = Column(String, primary_key=True, autoincrement=False)
+    id = Column(Integer, primary_key=True, autoincrement=False)
     name = Column(String, nullable=False)
     admin = Column(Boolean, nullable=False)
+    blocked = Column(Boolean, nullable=False)
 
     def __str__(self):
         return f"name: {self.name}; id: {self.id}"
@@ -32,31 +33,55 @@ def create_database(connection_string):
     engine = create_engine(connection_string, echo=True)
     Base.metadata.create_all(engine)
     session = Session(bind=engine)
-    create_update_user(session, ADMIN_ID, "", admin=True)
+    get_or_create(
+        session, Users, True, id=ADMIN_ID, name=ADMIN_NAME, admin=True, blocked=False
+    )
     return session
 
 
-# def get_session(connection_string):
-#     engine = create_engine(connection_string)
-#     return Session(bind=engine)
+def get_or_create(session, model, update, **kwargs):
+    instance = session.query(model).filter_by(id=kwargs["id"]).first()
 
-
-def create_update_user(session, id, name, admin=False):
-    instance = session.query(Users).filter_by(id=id).first()
     if instance:
-        if not name=='':
-            instance.name = name
-        instance.admin = admin
+        logger.debug(f"FOUND in the database - type: {model}; {instance}")
+        if update:
+            for key, value in kwargs.items():
+                setattr(instance, key, value)
+                instance.postprocessing()
+            session.add(instance)
+            session.commit()
+            logger.debug(f"UPDATE - type: {model}; {instance}")
     else:
-        instance = Users(id=id, name=name, admin=admin)
-    instance.postprocessing()
-    session.add(instance)
-    session.commit()
+        instance = model(**kwargs)
+        instance.postprocessing()
+        session.add(instance)
+        session.commit()
+        logger.debug(f"CREATED - type: {model}; {instance}")
+
+    return instance
 
 
 def get_user(session, id):
-    user = None
-    instance = session.query(Users).filter_by(id=id).first()
-    if instance:
-        user = {"id": id, "name": instance.name, "admin": instance.admin}
-    return user
+    return session.query(Users).filter_by(id=id).first()
+
+def user_is_valid(session, id):
+    db_user = get_user(session, id)
+    if db_user == None:
+        return False
+    else:
+        return not db_user.blocked
+
+def user_is_admin(session, id):
+    db_user = get_user(session, id)
+    if db_user == None:
+        return False
+    else:
+        return not db_user.blocked and db_user.admin
+    
+    
+def user_is_blocked(session, id):
+    db_user = get_user(session, id)
+    if db_user == None:
+        return False
+    else:
+        return db_user.blocked    

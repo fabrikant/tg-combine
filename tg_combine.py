@@ -1,6 +1,8 @@
 import logging
-import tg_combine_db
+import tg_combine_db as db
 from telethon import TelegramClient, events
+from telethon.tl.custom import Button
+
 import subprocess
 from keys import (
     BOT_TOKEN,
@@ -12,109 +14,173 @@ from keys import (
     COOKIES_FILE,
 )
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-db_session = tg_combine_db.create_database(f"sqlite:///{DB_FILENAME}")
-# Create the client and connect
+COMMAND_START = "/start"
+COMMAND_QUERY_REG = "/registration"
+COMMAND_ACCEPT_REG = "/accept_registration"
+COMMAND_DECLINE_REG = "/decline_registration"
+COMMAND_BLOCK_USER = "/block_user"
+COMMAND_LIST_USER = "/list_user"
+
+db_session = db.create_database(f"sqlite:///{DB_FILENAME}")
 client = TelegramClient("bot", API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 
 
-# # Handler for the /start command
-# @client.on(events.NewMessage(pattern="/start"))
-# async def start(event):
-#     await event.respond("Hello! I am a Telethon bot. How can I assist you today?")
-#     logging.info(f"Start command received from {event.sender_id}")
+# *****************************************************************************
+async def user_info(user_or_id):
+    if type(user_or_id) == type(1):
+        user = await client.get_entity(user_or_id)
+    else:
+        user = user_or_id
+
+    info = user.first_name
+    if user.last_name != None:
+        info += f" {user.last_name}"
+    if user.phone != None:
+        info += f" ({user.phone})"
+    return info
 
 
-# # Handler for the /help command
-# @client.on(events.NewMessage(pattern="/help"))
-# async def help(event):
-#     help_text = (
-#         "Here are the commands you can use:\n"
-#         "/start - Start the bot\n"
-#         "/help - Get help information\n"
-#         "/info - Get information about the bot\n"
-#         "/echo <message> - Echo back the message\n"
-#     )
-#     await event.respond(help_text)
-#     logging.info(f"Help command received from {event.sender_id}")
+# *****************************************************************************
+def create_butons(commands):
+    btns = []
+    for command in commands:
+        btns.append(
+            [
+                Button.text(
+                    command,
+                    resize=True,
+                    single_use=True,
+                    selective=True,
+                )
+            ]
+        )
+    return btns
 
 
-# # Handler for the /info command
-# @client.on(events.NewMessage(pattern="/info"))
-# async def info(event):
-#     await event.respond(
-#         "This bot is created using Telethon in Python. It can respond to various commands and messages."
-#     )
-#     logging.info(f"Info command received from {event.sender_id}")
+# *****************************************************************************
+@client.on(events.NewMessage(pattern=COMMAND_START))
+async def start(event):
+    sender_id = event.sender_id
+    name = await user_info(event.sender)
+
+    if  db.user_is_valid(db_session, sender_id):
+        await event.respond(
+            f"Привет, {name}, вы не зарегистрированны. Попросить администратора добавить вас в список пользователей?",
+            buttons=create_butons(
+                [
+                    f"{COMMAND_QUERY_REG}",
+                ]
+            ),
+        )
+    else:
+        if db.user_is_admin(db_session, sender_id):
+            await event.respond("Вы администратор")
+        else:
+            await event.respond(
+                f"Привет, {name}, вы зарегистрированный пользователь и у вас есть следующие возможности:"
+            )
 
 
-# # Handler for the /echo command
-# @client.on(events.NewMessage(pattern="/echo (.+)"))
-# async def echo(event):
-#     message = event.pattern_match.group(1)
-#     await event.respond(f"Echo: {message}")
-#     logging.info(
-#         f"Echo command received from {event.sender_id} with message: {message}"
-#     )
+# *****************************************************************************
+@client.on(events.NewMessage(pattern=f"{COMMAND_ACCEPT_REG}(.+)"))
+async def accept_registration(event):
+    # если команда не от админа, ничего не делаем
+    if not db.user_is_admin(db_session, event.sender_id):
+        return
+    # Создаем пользователя
+    new_user_id = int(event.pattern_match.group(1))
+    new_user_info = await user_info(new_user_id)
+    db.get_or_create(
+        db_session,
+        db.Users,
+        True,
+        id=new_user_id,
+        name=new_user_info,
+        admin=False,
+        blocked=False,
+    )
+    # Нужно сообщить пользователю о регистрации
+    await client.send_message(new_user_id, "Заявка на регистрацию одобрена")
 
 
-# # Keyword-based response handler
-# @client.on(events.NewMessage)
-# async def keyword_responder(event):
-#     message = event.text.lower()
-
-#     responses = {
-#         "hello": "Hi there! How can I help you today?",
-#         "how are you": "I am just a bot, but I am here to assist you!",
-#         "what is your name": "I am MyAwesomeBot, your friendly Telegram assistant.",
-#         "bye": "Goodbye! Have a great day!",
-#         "time": "I cannot tell the current time, but you can check your device!",
-#         "date": "I cannot provide the current date, but your device surely can!",
-#         "weather": "I cannot check the weather, but there are many apps that can help you with that!",
-#         "thank you": "You are welcome!",
-#         "help me": "Sure! What do you need help with?",
-#         "good morning": "Good morning! I hope you have a great day!",
-#         "good night": "Good night! Sweet dreams!",
-#         "who created you": "I was created by a developer using the Telethon library in Python.",
-#     }
-
-#     response = responses.get(message, None)
-
-#     if response:
-#         await event.respond(response)
-#     else:
-#         # Default response
-#         default_response = (
-#             "I didn't understand that command. Here are some commands you can try:\n"
-#             "/start - Start the bot\n"
-#             "/help - Get help information\n"
-#             "/info - Get information about the bot\n"
-#             "/echo <message> - Echo back the message\n"
-#         )
-#         await event.respond(default_response)
-#     logging.info(f"Message received from {event.sender_id}: {event.text}")
+# *****************************************************************************
+@client.on(events.NewMessage(pattern=f"{COMMAND_BLOCK_USER}(.+)"))
+async def block_user(event):
+    # если команда не от админа, ничего не делаем
+    if not db.user_is_admin(db_session, event.sender_id):
+        return
+    # Создаем пользователя
+    new_user_id = int(event.pattern_match.group(1))
+    new_user_info = await user_info(new_user_id)
+    db.get_or_create(
+        db_session,
+        db.Users,
+        True,
+        id=new_user_id,
+        name=new_user_info,
+        admin=False,
+        blocked=True,
+    )
+    # Нужно сообщить пользователю о регистрации
+    await client.send_message(new_user_id, "Вы заблокированы")
 
 
-async def send_go_away(event):
+# *****************************************************************************
+@client.on(events.NewMessage(pattern=f"{COMMAND_DECLINE_REG}(.+)"))
+async def decline_registration(event):
+    # если команда не от админа, ничего не делаем
+    if not db.user_is_admin(db_session, event.sender_id):
+        return
+    # Создаем пользователя
+    new_user_id = int(event.pattern_match.group(1))
+
+    # Нужно сообщить пользователю об отказе в регистрации
+    await client.send_message(new_user_id, "Заявка на регистрацию отклонена")
+
+
+# *****************************************************************************
+@client.on(events.NewMessage(pattern=COMMAND_QUERY_REG))
+async def registration(event):
+    sender_id = event.sender_id
     sender = event.sender
-    name = sender.first_name
-    if sender.last_name != None:
-        name += f" {sender.last_name}"
-    if sender.phone != None:
-        name += f" ({sender.phone})"
-    await event.respond(f"Уходи, {name}, я тебя не знаю!!!")
+    sender_info = await user_info(sender)
+
+    # Отправляем запрос администраторам
+    db_query = (
+        db_session.query(db.Users)
+        .filter(db.Users.admin == True)
+        .filter(db.Users.blocked == False)
+        .all()
+    )
+    for db_admin in db_query:
+        msg = f"Запрос на регистрацию от пользователя: {sender_info}"
+        await client.send_message(
+            db_admin.id,
+            msg,
+            buttons=create_butons(
+                [
+                    f"{COMMAND_ACCEPT_REG} {sender_id}",
+                    f"{COMMAND_DECLINE_REG} {sender_id}",
+                    f"{COMMAND_BLOCK_USER} {sender_id}",
+                ]
+            ),
+        )
+    # Отправляем ответ пользователю
+    await event.respond(
+        f"Администратору отправлен запрос на регистрацию. Ожидайте решения!"
+    )
 
 
+# *****************************************************************************
 @client.on(events.NewMessage(pattern="https://www.litres.ru/audiobook/(.+)"))
 async def litres_url(event):
     url = event.text
     user_id = event.sender_id
-    db_user = tg_combine_db.get_user(db_session, user_id)
+    db_user = db.get_user(db_session, user_id)
     if db_user == None:
-        await send_go_away(event)
+        user_info = await user_info(event.sender)
+        await event.respond(f"Уходи, {user_info}, я тебя не знаю!!!")
     else:
-        # await event.respond(f"Сейчас будем скачивать: {url}")
         subprocess.Popen(
             f"{DOWNLOAD_COMMAND} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
             --cookies-file {COOKIES_FILE} --output {DOWNLOAD_PATH} --url {url}",
@@ -122,6 +188,11 @@ async def litres_url(event):
         )
 
 
-# Start the client
-client.start()
-client.run_until_disconnected()
+# *****************************************************************************
+if __name__ == "__main__":
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        level=logging.INFO,
+    )
+    client.start()
+    client.run_until_disconnected()
