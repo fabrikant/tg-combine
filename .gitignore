@@ -1,3 +1,5 @@
 .venv
 .vscode
 keys.py
+__pycache__
+tg-combine.db
