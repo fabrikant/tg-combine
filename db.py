@@ -9,9 +9,14 @@ from sqlalchemy import (
     ForeignKey,
 )
 from sqlalchemy.orm import Session, declarative_base, relationship
-import logging
 
-logger = logging.getLogger()
+# import logging
+
+
+# logging.basicConfig(
+#     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+#     level=logging.ERROR,
+# )
 Base = declarative_base()
 
 
@@ -43,26 +48,24 @@ def get_or_create(session, model, update, **kwargs):
     instance = session.query(model).filter_by(id=kwargs["id"]).first()
 
     if instance:
-        logger.debug(f"FOUND in the database - type: {model}; {instance}")
         if update:
             for key, value in kwargs.items():
                 setattr(instance, key, value)
                 instance.postprocessing()
             session.add(instance)
             session.commit()
-            logger.debug(f"UPDATE - type: {model}; {instance}")
     else:
         instance = model(**kwargs)
         instance.postprocessing()
         session.add(instance)
         session.commit()
-        logger.debug(f"CREATED - type: {model}; {instance}")
 
     return instance
 
 
 def get_user(session, id):
     return session.query(Users).filter_by(id=id).first()
+
 
 def user_is_valid(session, id):
     db_user = get_user(session, id)
@@ -71,17 +74,18 @@ def user_is_valid(session, id):
     else:
         return not db_user.blocked
 
+
 def user_is_admin(session, id):
     db_user = get_user(session, id)
     if db_user == None:
         return False
     else:
         return not db_user.blocked and db_user.admin
-    
-    
+
+
 def user_is_blocked(session, id):
     db_user = get_user(session, id)
     if db_user == None:
         return False
     else:
-        return db_user.blocked    
+        return db_user.blocked
