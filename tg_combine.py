@@ -14,6 +14,7 @@ from keys import (
     DOWNLOAD_COMMAND,
     DOWNLOAD_PATH,
     COOKIES_FILE,
+    ADMIN_ID,
 )
 
 
@@ -71,11 +72,7 @@ async def user_list(event):
     db_query = db_session.query(db.Users).order_by(db.Users.name).all()
     msg = ""
     for db_user in db_query:
-        msg += f"/edit_user_{db_user.id}\n\
-                name: {db_user.name}\n\
-                admin:{db_user.admin}\n\
-                blocked:{db_user.blocked}\n"
-
+        msg += cmd.user_about_baner(db_user)
     await event.respond(msg)
 
 
@@ -92,6 +89,53 @@ async def upload_cookies(event):
     msg = "Отправьте сообщение с командой /upload_cookies и вложенным файлом"
     await event.respond(msg)
 
+
+# *****************************************************************************
+# Нажата одна из кнопок редактирования пользователя /uedit.
+# Убеждаемся, что команду дал админ и редактируем мы не главного админа,
+# тот, который ADMIN_ID.
+# Разбираем и выполняем команду
+@client.on(events.CallbackQuery(data=re.compile(b"/uedit_")))
+async def reg_decline(event):
+    str_command = event.data.decode("utf-8")
+    user_id = event.sender_id
+    if not await check_user_right(str_command, user_id, need_admin_rights=True):
+        return
+    cmd_array = str_command.replace("/uedit_", "").split("_")
+    cmd_or_field = cmd_array[0]
+    cmd_value = int(cmd_array[1])
+    cmd_user_id = int(cmd_array[2])
+    # Проверим, что мы не редактируем главного админа
+    if cmd_user_id == ADMIN_ID:
+        await event.respond("Запрещено редактировать главного админа")
+        return
+
+    # Проверим, что пользователь существует в базе
+    db_user = db_session.query(db.Users).filter_by(id=cmd_user_id).first()
+    if db_user == None:
+        msg = f"Попытка редактирования отсутствующего в базе пользователя\nid:{cmd_user_id}"
+        await event.respond(msg)
+        logging.warning(msg)
+        return
+
+    # Редактирование пользователя
+    if cmd_or_field == "blocked" or cmd_or_field == "admin":
+        setattr(db_user, cmd_or_field, cmd_value)
+        db_user.postprocessing()
+        db_session.add(db_user)
+        db_session.commit()
+
+        # Читаем пользователя из базы и выводим новые значения
+        db_user = db_session.query(db.Users).filter_by(id=cmd_user_id).first()
+        msg = f"Новые значения:\n{cmd.user_about_baner(db_user)}"
+        await event.respond(msg)
+    
+    #Удаление пользователя из базы
+    if cmd_or_field == "delete":
+        db_session.query(db.Users).filter_by(id=cmd_user_id).delete()
+        db_session.commit()
+        await event.respond(f"Пользователь id: {cmd_user_id}\nудален из базы")
+        
 
 # *****************************************************************************
 # Нажата inline кнопка /reg_accept - запрос на регистрацию одобрен
@@ -213,6 +257,24 @@ async def registration_query(event):
 
 
 # *****************************************************************************
+# Обработка команды /edit_user
+# Обязательно нужно убедиться, что команду присылает админ
+# После этого отправляем inline кнопки для редактирования usera
+@client.on(events.NewMessage(pattern="/edit_user_(.+)"))
+async def edit_user(event):
+    user_id = event.sender_id
+    if not await check_user_right("/upload_cookies", user_id, True):
+        return
+    edit_user_id = int(event.text.replace("/edit_user_", ""))
+    db_user = db_session.query(db.Users).filter_by(id=edit_user_id).first()
+    await client.send_message(
+        user_id,
+        f"Редактирование пользователя\n{cmd.user_about_baner(db_user)}",
+        buttons=cmd.create_admin_user_edit_buttons(edit_user_id),
+    )
+
+
+# *****************************************************************************
 # Обработка загрузки файла cookies
 # Обязательно нужно убедиться, что файл присылает админ
 @client.on(events.NewMessage(pattern="/upload_cookies"))
@@ -229,7 +291,7 @@ async def upload_cookies(event):
 
 
 # *****************************************************************************
-# Главная полезная нагрузка бота. Позволяем валидным пользователям 
+# Главная полезная нагрузка бота. Позволяем валидным пользователям
 # скачивать книги
 @client.on(events.NewMessage(pattern="https://(.+)litres.ru/audiobook/(.+)"))
 async def litres_url(event):
