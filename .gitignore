@@ -4,3 +4,4 @@ keys.py
 __pycache__
 users.db
 bot.session
+bot.session-journal
