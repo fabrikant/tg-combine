@@ -3,3 +3,4 @@
 keys.py
 __pycache__
 users.db
+bot.session
