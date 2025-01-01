@@ -129,13 +129,13 @@ async def reg_decline(event):
         db_user = db_session.query(db.Users).filter_by(id=cmd_user_id).first()
         msg = f"Новые значения:\n{cmd.user_about_baner(db_user)}"
         await event.respond(msg)
-    
-    #Удаление пользователя из базы
+
+    # Удаление пользователя из базы
     if cmd_or_field == "delete":
         db_session.query(db.Users).filter_by(id=cmd_user_id).delete()
         db_session.commit()
         await event.respond(f"Пользователь id: {cmd_user_id}\nудален из базы")
-        
+
 
 # *****************************************************************************
 # Нажата inline кнопка /reg_accept - запрос на регистрацию одобрен
@@ -297,15 +297,20 @@ async def upload_cookies(event):
 async def litres_url(event):
     url = event.text
     user_id = event.sender_id
+    user_info = await get_user_info(user_id)
 
     if not db.user_is_valid(db_session, user_id):
-        user_info = await get_user_info(user_id)
         logging.warning(
             f"Попытка запустить скачивание не валидным пользователем\
             {user_info} с id: {user_id}"
         )
         return
 
+    # Пишем в лог и в базу данных у запуске загрузки
+    logging.info(f"Пользователь: {user_info} запустил загрузку: {url}")
+    db.add_book_record(db_session, user=user_id, url=url)
+    # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
+    # в телеграм о процессе и результате загрузки
     subprocess.Popen(
         f"{DOWNLOAD_COMMAND} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
         --cookies-file {COOKIES_FILE} --output {DOWNLOAD_PATH} --url {url}",

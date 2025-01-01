@@ -1,14 +1,16 @@
+import datetime
 from keys import ADMIN_ID, ADMIN_NAME
 from sqlalchemy import (
     Column,
     Integer,
     String,
     Boolean,
-    Float,
-    create_engine,
     ForeignKey,
+    DateTime,
+    create_engine,
 )
 from sqlalchemy.orm import Session, declarative_base, relationship
+
 Base = declarative_base()
 
 
@@ -18,6 +20,20 @@ class Users(Base):
     name = Column(String, nullable=False)
     admin = Column(Boolean, nullable=False)
     blocked = Column(Boolean, nullable=False)
+
+    def __str__(self):
+        return f"name: {self.name}; id: {self.id}"
+
+    def postprocessing(self):
+        pass
+
+
+class Books(Base):
+    __tablename__ = "books"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user = Column(Integer, ForeignKey("users.id"))
+    url = Column(String, nullable=False)
+    date = Column(DateTime, nullable=False)
 
     def __str__(self):
         return f"name: {self.name}; id: {self.id}"
@@ -53,6 +69,12 @@ def get_or_create(session, model, update, **kwargs):
         session.commit()
 
     return instance
+
+
+def add_book_record(session, user, url):
+    record = Books(user=user, url=url, date=datetime.datetime.now())
+    session.add_all([record])
+    session.commit()
 
 
 def get_user(session, id):
