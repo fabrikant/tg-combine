@@ -9,14 +9,6 @@ from sqlalchemy import (
     ForeignKey,
 )
 from sqlalchemy.orm import Session, declarative_base, relationship
-
-# import logging
-
-
-# logging.basicConfig(
-#     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-#     level=logging.ERROR,
-# )
 Base = declarative_base()
 
 
@@ -39,7 +31,7 @@ def create_database(connection_string):
     Base.metadata.create_all(engine)
     session = Session(bind=engine)
     get_or_create(
-        session, Users, True, id=ADMIN_ID, name=ADMIN_NAME, admin=True, blocked=False
+        session, Users, False, id=ADMIN_ID, name=ADMIN_NAME, admin=True, blocked=False
     )
     return session
 

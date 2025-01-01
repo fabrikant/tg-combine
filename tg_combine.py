@@ -60,24 +60,10 @@ async def check_user_right(str_command, user_id, need_admin_rights=False):
 
 
 # *****************************************************************************
-# @client.on(events.CallbackQuery)
-# async def handler(event):
-#     data = event.data.decode('utf-8')
-#     # builder = event.builder
-#     logging.info('отработал полный')
-#     pass
-#     # rev_text = event.text[::-1]
-#     # await event.answer([
-#     #     builder.article('Reverse text', text=rev_text),
-#     #     builder.photo('/path/to/photo.jpg')
-#     # ])
-
-
-# *****************************************************************************
 # Нажата inline кнопка /user_list
 # Убеждаемся, что пользователь - админ и ответным сообщением выводим список
 @client.on(events.CallbackQuery(data=b"/user_list"))
-async def handler(event):
+async def user_list(event):
     str_command = event.data.decode("utf-8")
     user_id = event.sender_id
     if not await check_user_right(str_command, user_id, need_admin_rights=True):
@@ -94,10 +80,25 @@ async def handler(event):
 
 
 # *****************************************************************************
+# Нажата inline кнопка /upload_cookies
+# Убеждаемся, что пользователь - админ и ответным сообщением выводим
+# Подсказку о загрузке файла cookies
+@client.on(events.CallbackQuery(data=b"/upload_cookies"))
+async def upload_cookies(event):
+    str_command = event.data.decode("utf-8")
+    user_id = event.sender_id
+    if not await check_user_right(str_command, user_id, need_admin_rights=True):
+        return
+    msg = "Отправьте сообщение с командой /upload_cookies и вложенным файлом"
+    await event.respond(msg)
+
+
+# *****************************************************************************
 # Нажата inline кнопка /reg_accept - запрос на регистрацию одобрен
 # Убеждаемся, что пользователь, нажавший кнопку - администратор
 # Регистрируем пользователя
-# и пишем сообщение о ругистрации соискателю
+# и пишем сообщение о регистрации соискателю,
+# а админу о регистрации пользователя
 @client.on(events.CallbackQuery(data=re.compile(b"/reg_accept")))
 async def reg_accept(event):
     str_command = event.data.decode("utf-8")
@@ -106,14 +107,14 @@ async def reg_accept(event):
         return
 
     unreg_user_id = int(str_command.replace("/reg_accept", ""))
-    new_user_info = await get_user_info(unreg_user_id)
+    unreg_user_info = await get_user_info(unreg_user_id)
 
     db.get_or_create(
         db_session,
         db.Users,
         True,
         id=unreg_user_id,
-        name=new_user_info,
+        name=unreg_user_info,
         admin=False,
         blocked=False,
     )
@@ -121,6 +122,9 @@ async def reg_accept(event):
         f"Поздравляю! Заявка на регистрацию одобрена!\nНачните работу с команды /start"
     )
     await client.send_message(unreg_user_id, msg)
+    await event.respond(
+        f"Новый пользователь {unreg_user_info} зарегестрирован в системе"
+    )
 
 
 # *****************************************************************************
@@ -134,9 +138,43 @@ async def reg_decline(event):
     if not await check_user_right(str_command, user_id, need_admin_rights=True):
         return
     unreg_user_id = int(str_command.replace("/reg_decline", ""))
+    unreg_user_info = await get_user_info(unreg_user_id)
     await client.send_message(
         unreg_user_id, "К сожалению, заявка на регистрацию отклонена!"
     )
+    await event.respond(
+        f"Отклонена заявка о регистрации пользователя {unreg_user_info}"
+    )
+
+
+# *****************************************************************************
+# Нажата inline кнопка /block_user - запрос на регистрацию одобрен
+# Убеждаемся, что пользователь, нажавший кнопку - администратор
+# Регистрируем пользователя
+# и пишем сообщение о регистрации соискателю,
+# а админу о регистрации пользователя
+@client.on(events.CallbackQuery(data=re.compile(b"/block_user")))
+async def block_user(event):
+    str_command = event.data.decode("utf-8")
+    user_id = event.sender_id
+    if not await check_user_right(str_command, user_id, need_admin_rights=True):
+        return
+
+    unreg_user_id = int(str_command.replace("/block_user", ""))
+    unreg_user_info = await get_user_info(unreg_user_id)
+
+    db.get_or_create(
+        db_session,
+        db.Users,
+        True,
+        id=unreg_user_id,
+        name=unreg_user_info,
+        admin=False,
+        blocked=True,
+    )
+
+    await client.send_message(unreg_user_id, cmd.you_blocked_baner())
+    await event.respond(f"Пользователь {unreg_user_info} заблокирован в системе")
 
 
 # *****************************************************************************
@@ -151,7 +189,7 @@ async def registration_query(event):
     sender_info = await get_user_info(sender)
 
     if db.user_is_blocked(db_session, sender_id):
-        await event.respond("К сожалению, вы заблокированы!")
+        await event.respond(cmd.you_blocked_baner())
         return
     if db.user_is_valid(db_session, sender_id):
         await event.respond("Вы уже зарегистрированы")
@@ -172,63 +210,6 @@ async def registration_query(event):
     await event.respond(
         "Запрос на регистрацию отправлен. Ожидайте решения администратора!"
     )
-
-
-# # *****************************************************************************
-# @client.on(events.NewMessage(pattern=f"{COMMAND_ACCEPT_REG}(.+)"))
-# async def accept_registration(event):
-#     # если команда не от админа, ничего не делаем
-#     if not db.user_is_admin(db_session, event.sender_id):
-#         return
-#     # Создаем пользователя
-#     new_user_id = int(event.pattern_match.group(1))
-#     new_user_info = await get_user_info(new_user_id)
-#     db.get_or_create(
-#         db_session,
-#         db.Users,
-#         True,
-#         id=new_user_id,
-#         name=new_user_info,
-#         admin=False,
-#         blocked=False,
-#     )
-#     # Нужно сообщить пользователю о регистрации
-#     await client.send_message(new_user_id, "Заявка на регистрацию одобрена")
-
-
-# # *****************************************************************************
-# @client.on(events.NewMessage(pattern=f"{COMMAND_BLOCK_USER}(.+)"))
-# async def block_user(event):
-#     # если команда не от админа, ничего не делаем
-#     if not db.user_is_admin(db_session, event.sender_id):
-#         return
-#     # Создаем пользователя
-#     new_user_id = int(event.pattern_match.group(1))
-#     new_user_info = await get_user_info(new_user_id)
-#     db.get_or_create(
-#         db_session,
-#         db.Users,
-#         True,
-#         id=new_user_id,
-#         name=new_user_info,
-#         admin=False,
-#         blocked=True,
-#     )
-#     # Нужно сообщить пользователю о регистрации
-#     await client.send_message(new_user_id, "Вы заблокированы")
-
-
-# # *****************************************************************************
-# @client.on(events.NewMessage(pattern=f"{COMMAND_DECLINE_REG}(.+)"))
-# async def decline_registration(event):
-#     # если команда не от админа, ничего не делаем
-#     if not db.user_is_admin(db_session, event.sender_id):
-#         return
-#     # Создаем пользователя
-#     new_user_id = int(event.pattern_match.group(1))
-
-#     # Нужно сообщить пользователю об отказе в регистрации
-#     await client.send_message(new_user_id, "Заявка на регистрацию отклонена")
 
 
 # *****************************************************************************
