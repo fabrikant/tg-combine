@@ -71,7 +71,7 @@ async def user_list(event):
     db_query = db_session.query(db.Users).order_by(db.Users.name).all()
     msg = ""
     for db_user in db_query:
-        msg += f"{db_user.id}\n\
+        msg += f"/edit_user_{db_user.id}\n\
                 name: {db_user.name}\n\
                 admin:{db_user.admin}\n\
                 blocked:{db_user.blocked}\n"
@@ -213,7 +213,25 @@ async def registration_query(event):
 
 
 # *****************************************************************************
-@client.on(events.NewMessage(pattern="https://www.litres.ru/audiobook/(.+)"))
+# Обработка загрузки файла cookies
+# Обязательно нужно убедиться, что файл присылает админ
+@client.on(events.NewMessage(pattern="/upload_cookies"))
+async def upload_cookies(event):
+    user_id = event.sender_id
+    if not await check_user_right("/upload_cookies", user_id, True):
+        return
+    document = event.message.document
+    if document == None:
+        await event.respond(f"Файл не приложен к сообщению")
+        return
+    file = await event.message.download_media(file=COOKIES_FILE)
+    await event.respond(f"Записан файл {COOKIES_FILE}")
+
+
+# *****************************************************************************
+# Главная полезная нагрузка бота. Позволяем валидным пользователям 
+# скачивать книги
+@client.on(events.NewMessage(pattern="https://(.+)litres.ru/audiobook/(.+)"))
 async def litres_url(event):
     url = event.text
     user_id = event.sender_id
@@ -234,6 +252,7 @@ async def litres_url(event):
 
 
 # *****************************************************************************
+# Обработка команды /start
 @client.on(events.NewMessage(pattern="/start"))
 async def start(event):
     sender_id = event.sender_id

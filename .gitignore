@@ -5,3 +5,4 @@ __pycache__
 users.db
 bot.session
 bot.session-journal
+cookies.json
