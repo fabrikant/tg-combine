@@ -11,7 +11,8 @@ from keys import (
     API_ID,
     API_HASH,
     DB_FILENAME,
-    DOWNLOAD_COMMAND,
+    DOWNLOAD_COMMAND_LITRES,
+    CREATE_COOKIES_COMMAND_LITRES,
     DOWNLOAD_PATH,
     COOKIES_FILE,
     ADMIN_ID,
@@ -87,6 +88,23 @@ async def upload_cookies(event):
     if not await check_user_right(str_command, user_id, need_admin_rights=True):
         return
     msg = "Отправьте сообщение с командой /upload_cookies и вложенным файлом"
+    await event.respond(msg)
+
+
+# *****************************************************************************
+# Нажата inline кнопка /create_cookies
+# Убеждаемся, что пользователь - админ и ответным сообщением выводим
+# Подсказку о создании файла cookies
+@client.on(events.CallbackQuery(data=b"/create_cookies"))
+async def create_cookies(event):
+    str_command = event.data.decode("utf-8")
+    user_id = event.sender_id
+    if not await check_user_right(str_command, user_id, need_admin_rights=True):
+        return
+    msg = (
+        "Отправьте сообщение с командой:\n/create_cookies user password\n"
+        "через пробел для создания файла cookies на сервере"
+    )
     await event.respond(msg)
 
 
@@ -291,6 +309,31 @@ async def upload_cookies(event):
 
 
 # *****************************************************************************
+# Обработка команды создания файла cookies по имени и паролю
+# Обязательно нужно убедиться, что файл присылает админ
+@client.on(events.NewMessage(pattern="/create_cookies (.+) (.+)"))
+async def message_create_cookies(event):
+    user_id = event.sender_id
+    if not await check_user_right("/create_cookies", user_id, True):
+        return
+    usr_pass_array = event.text.replace("/create_cookies ", "").split(" ")
+    if len(usr_pass_array) != 2:
+        await event.respond(f"Неверный формат команды")
+        return
+    # Запуск процесса создания файла cookies.
+    # Процесс сам будет отправлять сообщения пользователю
+    # в телеграм о процессе и результате загрузки
+    subprocess.Popen(
+        (
+            f"{CREATE_COOKIES_COMMAND_LITRES} -b firefox --telegram-api {BOT_TOKEN} "
+            f"--telegram-chatid {event.chat_id} --cookies-file {COOKIES_FILE} "
+            f" -u {usr_pass_array[0]} -p {usr_pass_array[1]} "
+        ),
+        shell=True,
+    )
+
+
+# *****************************************************************************
 # Главная полезная нагрузка бота. Позволяем валидным пользователям
 # скачивать книги
 @client.on(events.NewMessage(pattern="https://(.+)litres.ru/audiobook/(.+)"))
@@ -312,7 +355,7 @@ async def litres_url(event):
     # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
     # в телеграм о процессе и результате загрузки
     subprocess.Popen(
-        f"{DOWNLOAD_COMMAND} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
+        f"{DOWNLOAD_COMMAND_LITRES} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
         --cookies-file {COOKIES_FILE} --output {DOWNLOAD_PATH} --url {url}",
         shell=True,
     )

@@ -29,6 +29,7 @@ def create_admin_start_buttons():
     btns = []
     btns.append([Button.inline("Список пользователей", data="/user_list")])
     btns.append([Button.inline("Загрузить файл cookies", data="/upload_cookies")])
+    btns.append([Button.inline("Создать файл cookies по user/password", data="/create_cookies")])
     return btns
 
 
