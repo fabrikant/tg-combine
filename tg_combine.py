@@ -87,7 +87,7 @@ async def upload_cookies(event):
     user_id = event.sender_id
     if not await check_user_right(str_command, user_id, need_admin_rights=True):
         return
-    msg = "Отправьте сообщение с командой /upload_cookies и вложенным файлом"
+    msg = "Отправьте сообщение с командой\n/upload_cookies\nи вложенным файлом"
     await event.respond(msg)
 
 
@@ -392,3 +392,4 @@ if __name__ == "__main__":
     )
     client.start()
     client.run_until_disconnected()
+    db_session.close()
