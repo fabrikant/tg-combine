@@ -75,6 +75,7 @@ def hello_baner(user_info):
         "**ВАЖНО!**\n__"
         "   -Скачивание с сайта https://akniga.org требует значительного времени__"
         "\n\n"
+        "3. С сайта https://yakniga.org \n\n"
         "**Скачанные книги доступны по адресу: https://books.n-drive.cf **"
     )
 
