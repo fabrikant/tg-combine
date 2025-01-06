@@ -13,6 +13,7 @@ from keys import (
     DB_FILENAME,
     DOWNLOAD_COMMAND_LITRES,
     DOWNLOAD_COMMAND_AKNIGA,
+    DOWNLOAD_COMMAND_YAKNIGA,
     CREATE_COOKIES_COMMAND_LITRES,
     DOWNLOAD_PATH,
     COOKIES_FILE,
@@ -364,7 +365,7 @@ async def litres_url(event):
 # *****************************************************************************
 # Загрузка книг с akniga.org
 @client.on(events.NewMessage(pattern="https://akniga.org/(.+)"))
-async def litres_url(event):
+async def akniga_url(event):
     url = event.text
     user_id = event.sender_id
     user_info = await get_user_info(user_id)
@@ -383,6 +384,33 @@ async def litres_url(event):
     # в телеграм о процессе и результате загрузки
     subprocess.Popen(
         f"{DOWNLOAD_COMMAND_AKNIGA} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
+        --output {DOWNLOAD_PATH} --url {url}",
+        shell=True,
+    )
+
+
+# *****************************************************************************
+# Загрузка книг с yakniga.org
+@client.on(events.NewMessage(pattern="https://yakniga.org/(.+)"))
+async def yakniga_url(event):
+    url = event.text
+    user_id = event.sender_id
+    user_info = await get_user_info(user_id)
+
+    if not db.user_is_valid(db_session, user_id):
+        logging.warning(
+            f"Попытка запустить скачивание не валидным пользователем\
+            {user_info} с id: {user_id}"
+        )
+        return
+
+    # Пишем в лог и в базу данных у запуске загрузки
+    logging.info(f"Пользователь: {user_info} запустил загрузку: {url}")
+    db.add_book_record(db_session, user=user_id, url=url)
+    # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
+    # в телеграм о процессе и результате загрузки
+    subprocess.Popen(
+        f"{DOWNLOAD_COMMAND_YAKNIGA} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
         --output {DOWNLOAD_PATH} --url {url}",
         shell=True,
     )
