@@ -12,6 +12,7 @@ from keys import (
     API_HASH,
     DB_FILENAME,
     DOWNLOAD_COMMAND_LITRES,
+    DOWNLOAD_COMMAND_AKNIGA,
     CREATE_COOKIES_COMMAND_LITRES,
     DOWNLOAD_PATH,
     COOKIES_FILE,
@@ -334,8 +335,7 @@ async def message_create_cookies(event):
 
 
 # *****************************************************************************
-# Главная полезная нагрузка бота. Позволяем валидным пользователям
-# скачивать книги
+# Загрузка книг с litres.ru
 @client.on(events.NewMessage(pattern="https://(.+)litres.ru/audiobook/(.+)"))
 async def litres_url(event):
     url = event.text
@@ -362,6 +362,33 @@ async def litres_url(event):
 
 
 # *****************************************************************************
+# Загрузка книг с akniga.org
+@client.on(events.NewMessage(pattern="https://akniga.org/(.+)"))
+async def litres_url(event):
+    url = event.text
+    user_id = event.sender_id
+    user_info = await get_user_info(user_id)
+
+    if not db.user_is_valid(db_session, user_id):
+        logging.warning(
+            f"Попытка запустить скачивание не валидным пользователем\
+            {user_info} с id: {user_id}"
+        )
+        return
+
+    # Пишем в лог и в базу данных у запуске загрузки
+    logging.info(f"Пользователь: {user_info} запустил загрузку: {url}")
+    db.add_book_record(db_session, user=user_id, url=url)
+    # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
+    # в телеграм о процессе и результате загрузки
+    subprocess.Popen(
+        f"{DOWNLOAD_COMMAND_AKNIGA} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
+        --output {DOWNLOAD_PATH} --url {url}",
+        shell=True,
+    )
+
+
+# *****************************************************************************
 # Обработка команды /start
 @client.on(events.NewMessage(pattern="/start"))
 async def start(event):
@@ -372,16 +399,15 @@ async def start(event):
         await event.respond("К сожалению, вы заблокированы!")
         return
 
-    if not db.user_is_valid(db_session, sender_id):
+    if db.user_is_valid(db_session, sender_id):
+        await event.respond(cmd.hello_baner(user_info))
+        if db.user_is_admin(db_session, sender_id):
+            await event.respond("Команды", buttons=cmd.create_admin_start_buttons())
+    else:
         await event.respond(
             cmd.hello_baner_unreg(user_info),
             buttons=cmd.create_unreg_buttons(sender_id),
         )
-    else:
-        if db.user_is_admin(db_session, sender_id):
-            await event.respond("Команды", buttons=cmd.create_admin_start_buttons())
-        else:
-            await event.respond(cmd.hello_baner(user_info))
 
 
 # *****************************************************************************

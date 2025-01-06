@@ -9,8 +9,11 @@ ADMIN_ID = "telegram_user_id"
 # Полный путь к файлу базы данных. Используется sqlite
 DB_FILENAME = "/home/user/tg-combine.db"
 
-# Утилита загрузки с сайта litres.ru
+# Утилита загрузки с сайта litres.ru (https://github.com/fabrikant/litres_audiobooks_downloader)
 DOWNLOAD_COMMAND_LITRES = "/some_path/litres_audiobooks_downloader/download-book.sh"
 CREATE_COOKIES_COMMAND_LITRES = "/some_path/litres_audiobooks_downloader/create-cookies.sh"
 DOWNLOAD_PATH = "/some/books/path"
 COOKIES_FILE = "/some_path/cookies.json"
+
+# Утилита загрузки с сайта akniga.org (https://github.com/fabrikant/akniga_downloader)
+DOWNLOAD_COMMAND_AKNIGA='/some_path/akniga_downloader/download-book.sh'
