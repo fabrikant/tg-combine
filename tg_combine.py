@@ -14,6 +14,7 @@ from keys import (
     DOWNLOAD_COMMAND_LITRES,
     DOWNLOAD_COMMAND_AKNIGA,
     DOWNLOAD_COMMAND_YAKNIGA,
+    DOWNLOAD_COMMAND_KNIGAVUHE,
     CREATE_COOKIES_COMMAND_LITRES,
     DOWNLOAD_PATH,
     COOKIES_FILE,
@@ -417,7 +418,35 @@ async def yakniga_url(event):
 
 
 # *****************************************************************************
+# Загрузка книг с knigavuhe.org
+@client.on(events.NewMessage(pattern="https://knigavuhe.org/(.+)"))
+async def knigavuhe_url(event):
+    url = event.text
+    user_id = event.sender_id
+    user_info = await get_user_info(user_id)
+
+    if not db.user_is_valid(db_session, user_id):
+        logging.warning(
+            f"Попытка запустить скачивание не валидным пользователем\
+            {user_info} с id: {user_id}"
+        )
+        return
+
+    # Пишем в лог и в базу данных у запуске загрузки
+    logging.info(f"Пользователь: {user_info} запустил загрузку: {url}")
+    db.add_book_record(db_session, user=user_id, url=url)
+    # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
+    # в телеграм о процессе и результате загрузки
+    subprocess.Popen(
+        f"{DOWNLOAD_COMMAND_KNIGAVUHE} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
+        --output {DOWNLOAD_PATH} --url {url}",
+        shell=True,
+    )
+
+# *****************************************************************************
 # Обработка команды /start
+
+
 @client.on(events.NewMessage(pattern="/start"))
 async def start(event):
     sender_id = event.sender_id

@@ -5,6 +5,7 @@ API_ID = "api_id from my.telegram.org"
 API_HASH = "api hash from my.telegram.org"
 # Ваш id в телеграм. Можно спросить у какого-нибудь бота. Например @getmyid_bot
 ADMIN_ID = "telegram_user_id"
+ADMIN_NAME="YourName"
 
 # Полный путь к файлу базы данных. Используется sqlite
 DB_FILENAME = "/home/user/tg-combine.db"
