@@ -2,7 +2,7 @@
 .vscode
 keys.py
 __pycache__
-users.db
+*.db
 bot.session
 bot.session-journal
 cookies.json
