@@ -21,6 +21,7 @@ from keys import (
     ADMIN_ID,
 )
 
+subprocess_list = []
 
 db_session = db.create_database(f"sqlite:///{DB_FILENAME}")
 client = TelegramClient("bot", API_ID, API_HASH).start(bot_token=BOT_TOKEN)
@@ -326,13 +327,15 @@ async def message_create_cookies(event):
     # Запуск процесса создания файла cookies.
     # Процесс сам будет отправлять сообщения пользователю
     # в телеграм о процессе и результате загрузки
-    subprocess.Popen(
-        (
-            f"{CREATE_COOKIES_COMMAND_LITRES} -b firefox --telegram-api {BOT_TOKEN} "
-            f"--telegram-chatid {event.chat_id} --cookies-file {COOKIES_FILE} "
-            f" -u {usr_pass_array[0]} -p {usr_pass_array[1]} "
-        ),
-        shell=True,
+    subprocess_list.append(
+        subprocess.Popen(
+            (
+                f"{CREATE_COOKIES_COMMAND_LITRES} -b firefox --telegram-api {BOT_TOKEN} "
+                f"--telegram-chatid {event.chat_id} --cookies-file {COOKIES_FILE} "
+                f" -u {usr_pass_array[0]} -p {usr_pass_array[1]} "
+            ),
+            shell=True,
+        )
     )
 
 
@@ -356,10 +359,12 @@ async def litres_url(event):
     db.add_book_record(db_session, user=user_id, url=url)
     # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
     # в телеграм о процессе и результате загрузки
-    subprocess.Popen(
-        f"{DOWNLOAD_COMMAND_LITRES} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
+    subprocess_list.append(
+        subprocess.Popen(
+            f"{DOWNLOAD_COMMAND_LITRES} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
         --cookies-file {COOKIES_FILE} --output {DOWNLOAD_PATH} --url {url}",
-        shell=True,
+            shell=True,
+        )
     )
 
 
@@ -383,10 +388,12 @@ async def akniga_url(event):
     db.add_book_record(db_session, user=user_id, url=url)
     # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
     # в телеграм о процессе и результате загрузки
-    subprocess.Popen(
-        f"{DOWNLOAD_COMMAND_AKNIGA} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
+    subprocess_list.append(
+        subprocess.Popen(
+            f"{DOWNLOAD_COMMAND_AKNIGA} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
         --output {DOWNLOAD_PATH} --url {url}",
-        shell=True,
+            shell=True,
+        )
     )
 
 
@@ -410,10 +417,12 @@ async def yakniga_url(event):
     db.add_book_record(db_session, user=user_id, url=url)
     # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
     # в телеграм о процессе и результате загрузки
-    subprocess.Popen(
-        f"{DOWNLOAD_COMMAND_YAKNIGA} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
+    subprocess_list.append(
+        subprocess.Popen(
+            f"{DOWNLOAD_COMMAND_YAKNIGA} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
         --output {DOWNLOAD_PATH} --url {url}",
-        shell=True,
+            shell=True,
+        )
     )
 
 
@@ -437,16 +446,17 @@ async def knigavuhe_url(event):
     db.add_book_record(db_session, user=user_id, url=url)
     # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
     # в телеграм о процессе и результате загрузки
-    subprocess.Popen(
-        f"{DOWNLOAD_COMMAND_KNIGAVUHE} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
+    subprocess_list.append(
+        subprocess.Popen(
+            f"{DOWNLOAD_COMMAND_KNIGAVUHE} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
         --output {DOWNLOAD_PATH} --url {url}",
-        shell=True,
+            shell=True,
+        )
     )
+
 
 # *****************************************************************************
 # Обработка команды /start
-
-
 @client.on(events.NewMessage(pattern="/start"))
 async def start(event):
     sender_id = event.sender_id
@@ -466,6 +476,24 @@ async def start(event):
             buttons=cmd.create_unreg_buttons(sender_id),
         )
 
+# *****************************************************************************
+# Обработка всех сообщений
+@client.on(events.NewMessage())
+async def all_messages(event):
+    #Просто проверяем нет ли завершившихся процессов
+    check_subprocesses()
+
+# *****************************************************************************
+# При избавляемся от зомби процессов
+def check_subprocesses():
+    indexes = []
+    for index, sub_prc in enumerate(subprocess_list):
+        sub_prc.communicate()
+        if not sub_prc.poll() is None:
+            indexes.append(index)
+    
+    for index in sorted(indexes, reverse=True):
+        del subprocess_list[index]
 
 # *****************************************************************************
 if __name__ == "__main__":
@@ -476,3 +504,4 @@ if __name__ == "__main__":
     client.start()
     client.run_until_disconnected()
     db_session.close()
+    check_subprocesses()
