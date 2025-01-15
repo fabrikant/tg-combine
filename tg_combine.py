@@ -476,12 +476,14 @@ async def start(event):
             buttons=cmd.create_unreg_buttons(sender_id),
         )
 
+
 # *****************************************************************************
 # Обработка всех сообщений
 @client.on(events.NewMessage())
 async def all_messages(event):
-    #Просто проверяем нет ли завершившихся процессов
+    # Просто проверяем нет ли завершившихся процессов
     check_subprocesses()
+
 
 # *****************************************************************************
 # При избавляемся от зомби процессов
@@ -491,9 +493,10 @@ def check_subprocesses():
         sub_prc.communicate()
         if not sub_prc.poll() is None:
             indexes.append(index)
-    
+
     for index in sorted(indexes, reverse=True):
         del subprocess_list[index]
+
 
 # *****************************************************************************
 if __name__ == "__main__":

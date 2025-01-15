@@ -1,4 +1,10 @@
 from telethon.tl.custom import Button
+from keys import (
+    DOWNLOAD_COMMAND_LITRES,
+    DOWNLOAD_COMMAND_AKNIGA,
+    DOWNLOAD_COMMAND_YAKNIGA,
+    DOWNLOAD_COMMAND_KNIGAVUHE,
+)
 
 
 # *****************************************************************************
@@ -29,7 +35,13 @@ def create_admin_start_buttons():
     btns = []
     btns.append([Button.inline("Список пользователей", data="/user_list")])
     btns.append([Button.inline("Загрузить файл cookies", data="/upload_cookies")])
-    btns.append([Button.inline("Создать cookies litres.ru user/password", data="/create_cookies")])
+    btns.append(
+        [
+            Button.inline(
+                "Создать cookies litres.ru user/password", data="/create_cookies"
+            )
+        ]
+    )
     return btns
 
 
@@ -58,27 +70,45 @@ def create_unreg_buttons(user_id):
 
 # *****************************************************************************
 def hello_baner(user_info):
-    return (
+    msg = (
         f"Привет, {user_info}!\n"
         "Вы зарегистрированы и можете пользоваться этим ботом.\n"
         "Он умеет скачивать аудиокниги. Для этого просто отправтье "
         "ссылку на страницу с аудиокнигой в этот чат.\n"
         "Скачивать можно:\n\n"
-        "1. С сайта https://litres.ru \n"
-        "**ВАЖНО!**\n__"
-        "    - Скачать можно только книги доступные по подписке (не те которые нужно покупать "
-        "или брать по абонементу)\n"
-        "    - При копировании ссылки обращайте внимание на то, чтобы страница была именно "
-        "аудиокниги, а не текстовой версии. Текстовая и аудио версии имеют разные "
-        "идентификаторы и адреса\n\n"
-        "2. С сайта https://akniga.org аудиокниги и серии аудиокниг__\n"
-        "**ВАЖНО!**\n__"
-        "   -Скачивание с сайта https://akniga.org требует значительного времени__"
-        "\n\n"
-        "3. С сайта https://yakniga.org \n\n"
-        "4. С сайта https://knigavuhe.org \n\n"
-        "**Скачанные книги доступны по адресу: https://books.n-drive.cf **"
     )
+    ind = 0
+    if DOWNLOAD_COMMAND_LITRES != "":
+        ind += 1
+        msg += (
+            f"{ind}. С сайта https://litres.ru \n"
+            "**ВАЖНО!**\n__"
+            "    - Скачать можно только книги доступные по подписке (не те которые нужно покупать "
+            "или брать по абонементу)\n"
+            "    - При копировании ссылки обращайте внимание на то, чтобы страница была именно "
+            "аудиокниги, а не текстовой версии. Текстовая и аудио версии имеют разные "
+            "идентификаторы и адреса\n\n"
+        )
+    if DOWNLOAD_COMMAND_AKNIGA != "":
+        ind += 1
+        msg += (
+            f"{ind}. С сайта https://akniga.org аудиокниги и серии аудиокниг__\n"
+            "**ВАЖНО!**\n__"
+            "   -Скачивание с сайта https://akniga.org требует значительного времени__"
+            "\n\n"
+        )
+    if DOWNLOAD_COMMAND_YAKNIGA != "":
+        ind += 1
+        msg += f"{ind}. С сайта https://yakniga.org \n\n"
+    if DOWNLOAD_COMMAND_YAKNIGA != "":
+        ind += 1
+        msg += (
+            f"{ind}. С сайта https://knigavuhe.org \n\n"
+            "**Скачанные книги доступны по адресу: https://books.n-drive.cf **"
+        )
+    if ind == 0:
+        msg += "Ниоткуда нельзя скачивать!!!"
+    return msg
 
 
 # *****************************************************************************
