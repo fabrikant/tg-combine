@@ -100,7 +100,7 @@ def hello_baner(user_info):
     if DOWNLOAD_COMMAND_YAKNIGA != "":
         ind += 1
         msg += f"{ind}. С сайта https://yakniga.org \n\n"
-    if DOWNLOAD_COMMAND_YAKNIGA != "":
+    if DOWNLOAD_COMMAND_KNIGAVUHE != "":
         ind += 1
         msg += (
             f"{ind}. С сайта https://knigavuhe.org \n\n"
