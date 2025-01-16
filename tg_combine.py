@@ -340,9 +340,9 @@ async def message_create_cookies(event):
 
 
 # *****************************************************************************
-# Загрузка книг с litres.ru
-@client.on(events.NewMessage(pattern="https://(.+)litres.ru/audiobook/(.+)"))
-async def litres_url(event):
+# Обработка url
+@client.on(events.NewMessage(pattern="https://(.+)"))
+async def url_message(event):
     url = event.text
     user_id = event.sender_id
     user_info = await get_user_info(user_id)
@@ -354,105 +354,38 @@ async def litres_url(event):
         )
         return
 
-    # Пишем в лог и в базу данных у запуске загрузки
-    logging.info(f"Пользователь: {user_info} запустил загрузку: {url}")
-    db.add_book_record(db_session, user=user_id, url=url)
-    # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
-    # в телеграм о процессе и результате загрузки
-    subprocess_list.append(
-        subprocess.Popen(
-            f"{DOWNLOAD_COMMAND_LITRES} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
-        --cookies-file {COOKIES_FILE} --output {DOWNLOAD_PATH} --url {url}",
-            shell=True,
-        )
-    )
+    common_args = [
+        "-vv",
+        "--telegram-api",
+        BOT_TOKEN,
+        "--telegram-chatid",
+        str(event.chat_id),
+        "--output",
+        DOWNLOAD_PATH,
+        "--url",
+        url,
+    ]
+    cmd_list = []
 
+    if "litres.ru" in url:
+        if DOWNLOAD_COMMAND_LITRES != "":
+            cmd_list = [DOWNLOAD_COMMAND_LITRES, "--cookies-file", COOKIES_FILE]
+    elif "https://yakniga.org" in url and DOWNLOAD_COMMAND_YAKNIGA != "":
+        cmd_list = [DOWNLOAD_COMMAND_YAKNIGA]
+    elif "https://akniga.org" in url and DOWNLOAD_COMMAND_AKNIGA != "":
+        cmd_list = [DOWNLOAD_COMMAND_AKNIGA]
+    elif "https://knigavuhe.org" in url and DOWNLOAD_COMMAND_KNIGAVUHE != "":
+        cmd_list = [DOWNLOAD_COMMAND_KNIGAVUHE]
 
-# *****************************************************************************
-# Загрузка книг с akniga.org
-@client.on(events.NewMessage(pattern="https://akniga.org/(.+)"))
-async def akniga_url(event):
-    url = event.text
-    user_id = event.sender_id
-    user_info = await get_user_info(user_id)
-
-    if not db.user_is_valid(db_session, user_id):
-        logging.warning(
-            f"Попытка запустить скачивание не валидным пользователем\
-            {user_info} с id: {user_id}"
-        )
-        return
-
-    # Пишем в лог и в базу данных у запуске загрузки
-    logging.info(f"Пользователь: {user_info} запустил загрузку: {url}")
-    db.add_book_record(db_session, user=user_id, url=url)
-    # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
-    # в телеграм о процессе и результате загрузки
-    subprocess_list.append(
-        subprocess.Popen(
-            f"{DOWNLOAD_COMMAND_AKNIGA} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
-        --output {DOWNLOAD_PATH} --url {url}",
-            shell=True,
-        )
-    )
-
-
-# *****************************************************************************
-# Загрузка книг с yakniga.org
-@client.on(events.NewMessage(pattern="https://yakniga.org/(.+)"))
-async def yakniga_url(event):
-    url = event.text
-    user_id = event.sender_id
-    user_info = await get_user_info(user_id)
-
-    if not db.user_is_valid(db_session, user_id):
-        logging.warning(
-            f"Попытка запустить скачивание не валидным пользователем\
-            {user_info} с id: {user_id}"
-        )
-        return
-
-    # Пишем в лог и в базу данных у запуске загрузки
-    logging.info(f"Пользователь: {user_info} запустил загрузку: {url}")
-    db.add_book_record(db_session, user=user_id, url=url)
-    # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
-    # в телеграм о процессе и результате загрузки
-    subprocess_list.append(
-        subprocess.Popen(
-            f"{DOWNLOAD_COMMAND_YAKNIGA} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
-        --output {DOWNLOAD_PATH} --url {url}",
-            shell=True,
-        )
-    )
-
-
-# *****************************************************************************
-# Загрузка книг с knigavuhe.org
-@client.on(events.NewMessage(pattern="https://knigavuhe.org/(.+)"))
-async def knigavuhe_url(event):
-    url = event.text
-    user_id = event.sender_id
-    user_info = await get_user_info(user_id)
-
-    if not db.user_is_valid(db_session, user_id):
-        logging.warning(
-            f"Попытка запустить скачивание не валидным пользователем\
-            {user_info} с id: {user_id}"
-        )
-        return
-
-    # Пишем в лог и в базу данных у запуске загрузки
-    logging.info(f"Пользователь: {user_info} запустил загрузку: {url}")
-    db.add_book_record(db_session, user=user_id, url=url)
-    # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
-    # в телеграм о процессе и результате загрузки
-    subprocess_list.append(
-        subprocess.Popen(
-            f"{DOWNLOAD_COMMAND_KNIGAVUHE} --telegram-api {BOT_TOKEN} --telegram-chatid {event.chat_id} \
-        --output {DOWNLOAD_PATH} --url {url}",
-            shell=True,
-        )
-    )
+    if len(cmd_list) > 0:
+        # Пишем в лог и в базу данных у запуске загрузки
+        logging.info(f"Пользователь: {user_info} запустил загрузку: {url}")
+        db.add_book_record(db_session, user=user_id, url=url)
+        # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
+        # в телеграм о процессе и результате загрузки
+        subprocess_list.append(subprocess.Popen(cmd_list + common_args))
+    else:
+        await event.respond(f"Адрес: {url} не может быть обработан")
 
 
 # *****************************************************************************
@@ -486,7 +419,7 @@ async def all_messages(event):
 
 
 # *****************************************************************************
-# При избавляемся от зомби процессов
+# Избавляемся от зомби процессов
 def check_subprocesses():
     indexes = []
     for index, sub_prc in enumerate(subprocess_list):
