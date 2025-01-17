@@ -356,6 +356,8 @@ async def url_message(event):
 
     common_args = [
         "-vv",
+        "--cover",
+        "--metadata",
         "--telegram-api",
         BOT_TOKEN,
         "--telegram-chatid",
