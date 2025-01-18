@@ -385,7 +385,7 @@ async def url_message(event):
         db.add_book_record(db_session, user=user_id, url=url)
         # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
         # в телеграм о процессе и результате загрузки
-        subprocess_list.append(subprocess.Popen(cmd_list + common_args))
+        subprocess_list.append(subprocess.Popen(cmd_list + common_args, shell=True))
     else:
         await event.respond(f"Адрес: {url} не может быть обработан")
 
