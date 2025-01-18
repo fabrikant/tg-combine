@@ -354,38 +354,29 @@ async def url_message(event):
         )
         return
 
-    common_args = [
-        "-vv",
-        "--cover",
-        "--metadata",
-        "--telegram-api",
-        BOT_TOKEN,
-        "--telegram-chatid",
-        str(event.chat_id),
-        "--output",
-        DOWNLOAD_PATH,
-        "--url",
-        url,
-    ]
-    cmd_list = []
+    common_args = (
+        f" -vv --cover --metadata --telegram-api {BOT_TOKEN} "
+        f" --telegram-chatid {str(event.chat_id)} --output {DOWNLOAD_PATH} --url {url} "
+    )
+    cmd = ""
 
     if "litres.ru" in url:
         if DOWNLOAD_COMMAND_LITRES != "":
-            cmd_list = [DOWNLOAD_COMMAND_LITRES, "--cookies-file", COOKIES_FILE]
+            cmd = f"{DOWNLOAD_COMMAND_LITRES} --cookies-file {COOKIES_FILE} "
     elif "https://yakniga.org" in url and DOWNLOAD_COMMAND_YAKNIGA != "":
-        cmd_list = [DOWNLOAD_COMMAND_YAKNIGA]
+        cmd = DOWNLOAD_COMMAND_YAKNIGA
     elif "https://akniga.org" in url and DOWNLOAD_COMMAND_AKNIGA != "":
-        cmd_list = [DOWNLOAD_COMMAND_AKNIGA]
+        cmd = DOWNLOAD_COMMAND_AKNIGA
     elif "https://knigavuhe.org" in url and DOWNLOAD_COMMAND_KNIGAVUHE != "":
-        cmd_list = [DOWNLOAD_COMMAND_KNIGAVUHE]
+        cmd = DOWNLOAD_COMMAND_KNIGAVUHE
 
-    if len(cmd_list) > 0:
+    if len(cmd) > 0:
         # Пишем в лог и в базу данных у запуске загрузки
         logging.info(f"Пользователь: {user_info} запустил загрузку: {url}")
         db.add_book_record(db_session, user=user_id, url=url)
         # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
         # в телеграм о процессе и результате загрузки
-        subprocess_list.append(subprocess.Popen(cmd_list + common_args, shell=True))
+        subprocess_list.append(subprocess.Popen(cmd + common_args, shell=True))
     else:
         await event.respond(f"Адрес: {url} не может быть обработан")
 
@@ -410,14 +401,6 @@ async def start(event):
             cmd.hello_baner_unreg(user_info),
             buttons=cmd.create_unreg_buttons(sender_id),
         )
-
-
-# *****************************************************************************
-# Обработка всех сообщений
-@client.on(events.NewMessage())
-async def all_messages(event):
-    # Просто проверяем нет ли завершившихся процессов
-    check_subprocesses()
 
 
 # *****************************************************************************
