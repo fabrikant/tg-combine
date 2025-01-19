@@ -4,6 +4,7 @@ import inline_commands as cmd
 from telethon import TelegramClient, events
 from telethon.tl.custom import Button
 import re
+import asyncio
 
 import subprocess
 from keys import (
@@ -21,7 +22,6 @@ from keys import (
     ADMIN_ID,
 )
 
-subprocess_list = []
 
 db_session = db.create_database(f"sqlite:///{DB_FILENAME}")
 client = TelegramClient("bot", API_ID, API_HASH).start(bot_token=BOT_TOKEN)
@@ -324,19 +324,14 @@ async def message_create_cookies(event):
     if len(usr_pass_array) != 2:
         await event.respond(f"Неверный формат команды")
         return
-    # Запуск процесса создания файла cookies.
-    # Процесс сам будет отправлять сообщения пользователю
-    # в телеграм о процессе и результате загрузки
-    subprocess_list.append(
-        subprocess.Popen(
-            (
-                f"{CREATE_COOKIES_COMMAND_LITRES} -b firefox --telegram-api {BOT_TOKEN} "
-                f"--telegram-chatid {event.chat_id} --cookies-file {COOKIES_FILE} "
-                f" -u {usr_pass_array[0]} -p {usr_pass_array[1]} "
-            ),
-            shell=True,
-        )
+
+    cmd = (
+        f"{CREATE_COOKIES_COMMAND_LITRES} -b firefox --telegram-api {BOT_TOKEN} "
+        f" --telegram-chatid {event.chat_id} --cookies-file {COOKIES_FILE} "
+        f" -u {usr_pass_array[0]} -p {usr_pass_array[1]} "
     )
+    proc = await asyncio.create_subprocess_shell(cmd)
+    await proc.communicate()
 
 
 # *****************************************************************************
@@ -376,9 +371,21 @@ async def url_message(event):
         db.add_book_record(db_session, user=user_id, url=url)
         # Запуск процесса загрузки. Процесс сам будет отправлять сообщения пользователю
         # в телеграм о процессе и результате загрузки
-        subprocess_list.append(subprocess.Popen(cmd + common_args, shell=True))
+        proc = await asyncio.create_subprocess_shell(cmd + common_args)
+        await proc.communicate()
+
     else:
         await event.respond(f"Адрес: {url} не может быть обработан")
+
+
+# *****************************************************************************
+# Обработка url
+@client.on(events.NewMessage(pattern="/zomby"))
+async def zomby(event):
+    # subprocess.Popen("ls", shell=True)
+    proc = await asyncio.create_subprocess_shell("ls")
+
+    await proc.communicate()
 
 
 # *****************************************************************************
@@ -404,19 +411,6 @@ async def start(event):
 
 
 # *****************************************************************************
-# Избавляемся от зомби процессов
-def check_subprocesses():
-    indexes = []
-    for index, sub_prc in enumerate(subprocess_list):
-        sub_prc.communicate()
-        if not sub_prc.poll() is None:
-            indexes.append(index)
-
-    for index in sorted(indexes, reverse=True):
-        del subprocess_list[index]
-
-
-# *****************************************************************************
 if __name__ == "__main__":
     logging.basicConfig(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -425,4 +419,3 @@ if __name__ == "__main__":
     client.start()
     client.run_until_disconnected()
     db_session.close()
-    check_subprocesses()
