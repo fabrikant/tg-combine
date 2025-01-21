@@ -4,18 +4,22 @@ BOT_TOKEN = "TokenYourBot"
 API_ID = "api_id from my.telegram.org"
 API_HASH = "api hash from my.telegram.org"
 # Ваш id в телеграм. Можно спросить у какого-нибудь бота. Например @getmyid_bot
+# должно быть числом, а не строкой (без кавычек)
 ADMIN_ID = 1234567890
 ADMIN_NAME="YourName"
 
-# Полный путь к файлу базы данных. Используется sqlite
+# Полный путь к файлу базы данных. Используется sqlite3
 DB_FILENAME = "/home/user/tg-combine.db"
+# Полный путь к каталогу загрузки аудиокниг
+DOWNLOAD_PATH = "/some/books/path"
 
 # Утилита загрузки с сайта litres.ru (https://github.com/fabrikant/litres_audiobooks_downloader)
 DOWNLOAD_COMMAND_LITRES = "/some_path/litres_audiobooks_downloader/download-book.sh"
+#Утилита создания файла cookies по имени пользователя и паролю
 CREATE_COOKIES_COMMAND_LITRES = (
     "/some_path/litres_audiobooks_downloader/create-cookies.sh"
 )
-DOWNLOAD_PATH = "/some/books/path"
+#Путь к файлу cookies для сайта litres.ru
 COOKIES_FILE = "/some_path/cookies.json"
 
 # Утилита загрузки с сайта akniga.org (https://github.com/fabrikant/akniga_downloader)
