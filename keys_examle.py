@@ -32,3 +32,6 @@ DOWNLOAD_COMMAND_YAKNIGA = "/some_path/yakniga_downloader/download-book.sh"
 
 # Утилита загрузки с сайта knigavuhe.org (https://github.com/fabrikant/knigavuhe_downloader.git)
 DOWNLOAD_COMMAND_KNIGAVUHE = "/some_path/knigavuhe_downloader/download-book.sh"
+
+# Утилита загрузки с сайта knigavuhe.org (https://github.com/fabrikant/kot_baun_downloader.git)
+DOWNLOAD_COMMAND_KOT_BAUN = "/some_path/kot_baun_downloader/download-book.sh"

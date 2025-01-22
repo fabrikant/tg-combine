@@ -5,6 +5,7 @@
 1. [akniga_downloader](https://github.com/fabrikant/akniga_downloader.git)
 1. [knigavuhe_downloader](https://github.com/fabrikant/knigavuhe_downloader.git)
 1. [yakniga_downloader](https://github.com/fabrikant/yakniga_downloader.git)
+1. [kot_baun_downloader](https://github.com/fabrikant/kot_baun_downloader.git)
 
 # Требования
 1. [python3](https://www.python.org/) и venv. Тестировалось на версии 3.12

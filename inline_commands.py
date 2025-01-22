@@ -4,6 +4,7 @@ from keys import (
     DOWNLOAD_COMMAND_AKNIGA,
     DOWNLOAD_COMMAND_YAKNIGA,
     DOWNLOAD_COMMAND_KNIGAVUHE,
+    DOWNLOAD_COMMAND_KOT_BAUN,
 )
 
 
@@ -100,6 +101,10 @@ def hello_baner(user_info):
     if DOWNLOAD_COMMAND_KNIGAVUHE != "":
         ind += 1
         msg += f"{ind}. С сайта https://knigavuhe.org \n\n"
+    if DOWNLOAD_COMMAND_KOT_BAUN != "":
+        ind += 1
+        msg += f"{ind}. С сайта https://kot-baun.ru \n\n"
+
     if ind == 0:
         msg += "Ниоткуда нельзя скачивать!!!"
     else:

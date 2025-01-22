@@ -16,6 +16,7 @@ from keys import (
     DOWNLOAD_COMMAND_AKNIGA,
     DOWNLOAD_COMMAND_YAKNIGA,
     DOWNLOAD_COMMAND_KNIGAVUHE,
+    DOWNLOAD_COMMAND_KOT_BAUN,
     CREATE_COOKIES_COMMAND_LITRES,
     DOWNLOAD_PATH_AUDIOBOOKS,
     DOWNLOAD_PATH_TEXTBOOKS,
@@ -371,6 +372,8 @@ async def url_message(event):
         cmd = DOWNLOAD_COMMAND_AKNIGA
     elif "https://knigavuhe.org" in url and DOWNLOAD_COMMAND_KNIGAVUHE != "":
         cmd = DOWNLOAD_COMMAND_KNIGAVUHE
+    elif "https://kot-baun.ru" in url and DOWNLOAD_COMMAND_KOT_BAUN != "":
+        cmd = DOWNLOAD_COMMAND_KOT_BAUN
 
     common_args = (
         f" -vv --{cover_prefix}cover --{metadata_prefix}metadata --telegram-api {BOT_TOKEN} "
