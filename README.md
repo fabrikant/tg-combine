@@ -1,5 +1,5 @@
 # tg-combine
-Телеграм бот предназначен для управления загрузчиками аудиокниг:
+Телеграм бот предназначен для управления загрузчиками книг/аудиокниг:
 
 1. [litres_downloader](https://github.com/fabrikant/litres_downloader.git)
 1. [akniga_downloader](https://github.com/fabrikant/akniga_downloader.git)
