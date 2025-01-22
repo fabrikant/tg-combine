@@ -85,25 +85,25 @@ def hello_baner(user_info):
             f"{ind}. С сайта https://litres.ru \n"
             "**ВАЖНО!**\n__"
             "    - Скачать можно только книги доступные по подписке (не те которые нужно покупать "
-            "или брать по абонементу)\n\n"
+            "или брать по абонементу)__\n"
         )
     if DOWNLOAD_COMMAND_AKNIGA != "":
         ind += 1
         msg += (
-            f"{ind}. С сайта https://akniga.org аудиокниги и серии аудиокниг__\n"
+            f"{ind}. С сайта https://akniga.org аудиокниги и серии аудиокниг\n"
             "**ВАЖНО!**\n__"
             "   -Скачивание с сайта https://akniga.org требует значительного времени__"
-            "\n\n"
+            "\n"
         )
     if DOWNLOAD_COMMAND_YAKNIGA != "":
         ind += 1
-        msg += f"{ind}. С сайта https://yakniga.org \n\n"
+        msg += f"{ind}. С сайта https://yakniga.org \n"
     if DOWNLOAD_COMMAND_KNIGAVUHE != "":
         ind += 1
-        msg += f"{ind}. С сайта https://knigavuhe.org \n\n"
+        msg += f"{ind}. С сайта https://knigavuhe.org \n"
     if DOWNLOAD_COMMAND_KOT_BAUN != "":
         ind += 1
-        msg += f"{ind}. С сайта https://kot-baun.ru \n\n"
+        msg += f"{ind}. С сайта https://kot-baun.ru \n"
 
     if ind == 0:
         msg += "Ниоткуда нельзя скачивать!!!"
