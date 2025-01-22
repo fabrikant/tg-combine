@@ -11,13 +11,15 @@ ADMIN_NAME="YourName"
 # Полный путь к файлу базы данных. Используется sqlite3
 DB_FILENAME = "/home/user/tg-combine.db"
 # Полный путь к каталогу загрузки аудиокниг
-DOWNLOAD_PATH = "/some/books/path"
+DOWNLOAD_PATH_AUDIOBOOKS = "/some/books/path/audio"
+# Полный путь к каталогу загрузки текстов книг
+DOWNLOAD_PATH_TEXTBOOKS = "/some/books/path/texts"
 
-# Утилита загрузки с сайта litres.ru (https://github.com/fabrikant/litres_audiobooks_downloader)
-DOWNLOAD_COMMAND_LITRES = "/some_path/litres_audiobooks_downloader/download-book.sh"
+# Утилита загрузки с сайта litres.ru (https://github.com/fabrikant/litres_downloader)
+DOWNLOAD_COMMAND_LITRES = "/some_path/litres_downloader/download-book.sh"
 #Утилита создания файла cookies по имени пользователя и паролю
 CREATE_COOKIES_COMMAND_LITRES = (
-    "/some_path/litres_audiobooks_downloader/create-cookies.sh"
+    "/some_path/litres_downloader/create-cookies.sh"
 )
 #Путь к файлу cookies для сайта litres.ru
 COOKIES_FILE = "/some_path/cookies.json"

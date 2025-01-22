@@ -1,7 +1,7 @@
 # tg-combine
 Телеграм бот предназначен для управления загрузчиками аудиокниг:
 
-1. [litres_audiobooks_downloader](https://github.com/fabrikant/litres_audiobooks_downloader.git)
+1. [litres_downloader](https://github.com/fabrikant/litres_downloader.git)
 1. [akniga_downloader](https://github.com/fabrikant/akniga_downloader.git)
 1. [knigavuhe_downloader](https://github.com/fabrikant/knigavuhe_downloader.git)
 1. [yakniga_downloader](https://github.com/fabrikant/yakniga_downloader.git)
@@ -38,11 +38,12 @@ deactivate
 # Настройка
 Копируем файл **keys_examle.py** в тот же каталог с именем **keys.py** и заполняем его своими значениями.
 
-Если какие-то из качалок не планируется использовать, то для соответсвующих переменных необходимо в качестве пути указать пустую строку. Например:
+Если какие-то из качалок не планируется использовать, то для переменных типа DOWNLOAD_COMMAND_<ЧтоТоТам> необходимо в качестве пути указать пустую строку. Например:
 
 ```python3
 DOWNLOAD_COMMAND_AKNIGA = ""
 ```
+Это влияет на формирование текста приветственного банера. Команда **/start**
 
 # Запуск
 **Linux**

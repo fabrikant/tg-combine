@@ -17,7 +17,8 @@ from keys import (
     DOWNLOAD_COMMAND_YAKNIGA,
     DOWNLOAD_COMMAND_KNIGAVUHE,
     CREATE_COOKIES_COMMAND_LITRES,
-    DOWNLOAD_PATH,
+    DOWNLOAD_PATH_AUDIOBOOKS,
+    DOWNLOAD_PATH_TEXTBOOKS,
     COOKIES_FILE,
     ADMIN_ID,
 )
@@ -349,21 +350,32 @@ async def url_message(event):
         )
         return
 
-    common_args = (
-        f" -vv --cover --metadata --telegram-api {BOT_TOKEN} "
-        f" --telegram-chatid {str(event.chat_id)} --output {DOWNLOAD_PATH} --url {url} "
-    )
     cmd = ""
-
+    output_path = DOWNLOAD_PATH_AUDIOBOOKS
+    cover_prefix = ""
+    metadata_prefix = ""
     if "litres.ru" in url:
         if DOWNLOAD_COMMAND_LITRES != "":
             cmd = f"{DOWNLOAD_COMMAND_LITRES} --cookies-file {COOKIES_FILE} "
+            if "/book/" in url:
+                # Будем скачивать текстовую, а не аудиокнигу
+                # меняем каталог загрузки, отключаем загрузку обложки
+                # и метаданных, отправляем файл книги в телеграм
+                output_path = DOWNLOAD_PATH_TEXTBOOKS
+                cover_prefix = "no-"
+                metadata_prefix = "no-"
+                cmd += " --send-fb2-via-telegram "
     elif "https://yakniga.org" in url and DOWNLOAD_COMMAND_YAKNIGA != "":
         cmd = DOWNLOAD_COMMAND_YAKNIGA
     elif "https://akniga.org" in url and DOWNLOAD_COMMAND_AKNIGA != "":
         cmd = DOWNLOAD_COMMAND_AKNIGA
     elif "https://knigavuhe.org" in url and DOWNLOAD_COMMAND_KNIGAVUHE != "":
         cmd = DOWNLOAD_COMMAND_KNIGAVUHE
+
+    common_args = (
+        f" -vv --{cover_prefix}cover --{metadata_prefix}metadata --telegram-api {BOT_TOKEN} "
+        f" --telegram-chatid {str(event.chat_id)} --output {output_path} --url {url} "
+    )
 
     if len(cmd) > 0:
         # Пишем в лог и в базу данных у запуске загрузки
