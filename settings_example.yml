@@ -1,6 +1,6 @@
 ---
 # Нужно пообщаться с https://t.me/BotFather и получить токен
-telegram_bot_token: 7896541230:AAOYss5_yKc546684G0
+telegram_bot_token: "7896541230:AAOYss5_yKc546684G0"
 
 # На my.telegram.org нужно зарегестрировать приложение
 telegram_api_id: "20471786"
@@ -37,11 +37,13 @@ downloaders:
   # Остальное если понимаете зачем
   - name: litres
     url: https://litres.ru
+    # По умолчанию считается, что грузим аудиокнигу, но если в адресе есть такая
+    # подстрока, то это текст
     text_book_url_pattern: "/book/"
     # Команда загрузчика
     command: "your/path/litres_downloader/download-book.sh"
     # Путь к файлу cookies
-    cookies_filename: "/your/path/cookies.json"
+    cookies_filename: "/your/path/litres_cookies.json"
     banner_addition: "- Скачать можно только книги доступные по подписке (не те которые нужно покупать или брать по абонементу)"
     admin_commands:
       - id: "/command_litres_upload_cookies"
