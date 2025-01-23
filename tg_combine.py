@@ -1,32 +1,17 @@
 import logging
 import db
-import inline_commands as cmd
+import tg_dialogs as dialogs
 from telethon import TelegramClient, events
-from telethon.tl.custom import Button
 import re
 import asyncio
+from tg_settings import settings
 
-import subprocess
-from keys import (
-    BOT_TOKEN,
-    API_ID,
-    API_HASH,
-    DB_FILENAME,
-    DOWNLOAD_COMMAND_LITRES,
-    DOWNLOAD_COMMAND_AKNIGA,
-    DOWNLOAD_COMMAND_YAKNIGA,
-    DOWNLOAD_COMMAND_KNIGAVUHE,
-    DOWNLOAD_COMMAND_KOT_BAUN,
-    CREATE_COOKIES_COMMAND_LITRES,
-    DOWNLOAD_PATH_AUDIOBOOKS,
-    DOWNLOAD_PATH_TEXTBOOKS,
-    COOKIES_FILE,
-    ADMIN_ID,
+db_session = db.create_database(
+    f"sqlite:///{settings.db_filename}", settings.admin_id, settings.admin_name
 )
-
-
-db_session = db.create_database(f"sqlite:///{DB_FILENAME}")
-client = TelegramClient("bot", API_ID, API_HASH).start(bot_token=BOT_TOKEN)
+client = TelegramClient(
+    "bot", settings.telegram_api_id, settings.telegram_api_hash
+).start(bot_token=settings.telegram_bot_token)
 
 
 # *****************************************************************************
@@ -68,6 +53,31 @@ async def check_user_right(str_command, user_id, need_admin_rights=False):
 
 
 # *****************************************************************************
+async def upload_file(event, filename):
+    document = event.message.document
+    if document == None:
+        await event.respond(f"Файл не приложен к сообщению")
+        return
+    file = await event.message.download_media(file=filename)
+    await event.respond(f"Записан файл {filename}")
+
+
+# *****************************************************************************
+async def create_cookies_file(event, exec_filename, cookies_filename):
+    usr_pass_array = event.text.split(" ")
+    if len(usr_pass_array) != 3:
+        await event.respond(f"Неверный формат команды")
+        return
+    cmd = (
+        f"{exec_filename} -b {settings.browser} --telegram-api {settings.telegram_bot_token} "
+        f" --telegram-chatid {event.chat_id} --cookies-file {cookies_filename} "
+        f" -u {usr_pass_array[-2]} -p {usr_pass_array[-1]} "
+    )
+    proc = await asyncio.create_subprocess_shell(cmd)
+    await proc.communicate()
+
+
+# *****************************************************************************
 # Нажата inline кнопка /user_list
 # Убеждаемся, что пользователь - админ и ответным сообщением выводим список
 @client.on(events.CallbackQuery(data=b"/user_list"))
@@ -79,45 +89,14 @@ async def user_list(event):
     db_query = db_session.query(db.Users).order_by(db.Users.name).all()
     msg = ""
     for db_user in db_query:
-        msg += cmd.user_about_baner(db_user)
-    await event.respond(msg)
-
-
-# *****************************************************************************
-# Нажата inline кнопка /upload_cookies
-# Убеждаемся, что пользователь - админ и ответным сообщением выводим
-# Подсказку о загрузке файла cookies
-@client.on(events.CallbackQuery(data=b"/upload_cookies"))
-async def upload_cookies(event):
-    str_command = event.data.decode("utf-8")
-    user_id = event.sender_id
-    if not await check_user_right(str_command, user_id, need_admin_rights=True):
-        return
-    msg = "Отправьте сообщение с командой\n/upload_cookies\nи вложенным файлом"
-    await event.respond(msg)
-
-
-# *****************************************************************************
-# Нажата inline кнопка /create_cookies
-# Убеждаемся, что пользователь - админ и ответным сообщением выводим
-# Подсказку о создании файла cookies
-@client.on(events.CallbackQuery(data=b"/create_cookies"))
-async def create_cookies(event):
-    str_command = event.data.decode("utf-8")
-    user_id = event.sender_id
-    if not await check_user_right(str_command, user_id, need_admin_rights=True):
-        return
-    msg = (
-        "Отправьте сообщение с командой:\n/create_cookies user password\n"
-        "через пробел для создания файла cookies на сервере"
-    )
+        msg += dialogs.user_about_baner(db_user)
     await event.respond(msg)
 
 
 # *****************************************************************************
 # Нажата одна из кнопок редактирования пользователя /uedit.
 # Убеждаемся, что команду дал админ и редактируем мы не главного админа,
-# тот, который ADMIN_ID.
+# тот, который settings.admin_id.
 # Разбираем и выполняем команду
 @client.on(events.CallbackQuery(data=re.compile(b"/uedit_")))
 async def reg_decline(event):
@@ -130,7 +109,7 @@ async def reg_decline(event):
     cmd_value = int(cmd_array[1])
     cmd_user_id = int(cmd_array[2])
     # Проверим, что мы не редактируем главного админа
-    if cmd_user_id == ADMIN_ID:
+    if cmd_user_id == settings.admin_id:
         await event.respond("Запрещено редактировать главного админа")
         return
 
@@ -151,7 +130,7 @@ async def reg_decline(event):
 
         # Читаем пользователя из базы и выводим новые значения
         db_user = db_session.query(db.Users).filter_by(id=cmd_user_id).first()
-        msg = f"Новые значения:\n{cmd.user_about_baner(db_user)}"
+        msg = f"Новые значения:\n{dialogs.user_about_baner(db_user)}"
         await event.respond(msg)
 
     # Удаление пользователя из базы
@@ -241,7 +220,7 @@ async def block_user(event):
         blocked=True,
     )
 
-    await client.send_message(unreg_user_id, cmd.you_blocked_baner())
+    await client.send_message(unreg_user_id, dialogs.you_blocked_baner())
     await event.respond(f"Пользователь {unreg_user_info} заблокирован в системе")
 
 
@@ -257,7 +236,7 @@ async def registration_query(event):
     sender_info = await get_user_info(sender)
 
     if db.user_is_blocked(db_session, sender_id):
-        await event.respond(cmd.you_blocked_baner())
+        await event.respond(dialogs.you_blocked_baner())
         return
     if db.user_is_valid(db_session, sender_id):
         await event.respond("Вы уже зарегистрированы")
@@ -270,7 +249,7 @@ async def registration_query(event):
         .filter(db.Users.blocked == False)
         .all()
     )
-    btns = cmd.create_admin_reg_design_buttons(sender_id)
+    btns = dialogs.create_admin_reg_design_buttons(sender_id)
     msg = f"Запрос на регистрацию от пользователя: {sender_info}\n id: {sender_id}"
     for db_admin in db_query:
         await client.send_message(db_admin.id, msg, buttons=btns)
@@ -293,47 +272,34 @@ async def edit_user(event):
     db_user = db_session.query(db.Users).filter_by(id=edit_user_id).first()
     await client.send_message(
         user_id,
-        f"Редактирование пользователя\n{cmd.user_about_baner(db_user)}",
-        buttons=cmd.create_admin_user_edit_buttons(edit_user_id),
+        f"Редактирование пользователя\n{dialogs.user_about_baner(db_user)}",
+        buttons=dialogs.create_admin_user_edit_buttons(edit_user_id),
     )
 
 
 # *****************************************************************************
-# Обработка загрузки файла cookies
+# Обработка загрузки команды администратора
 # Обязательно нужно убедиться, что файл присылает админ
-@client.on(events.NewMessage(pattern="/upload_cookies"))
-async def upload_cookies(event):
+@client.on(events.NewMessage(pattern="/command(.+)"))
+async def admin_command(event):
     user_id = event.sender_id
-    if not await check_user_right("/upload_cookies", user_id, True):
-        return
-    document = event.message.document
-    if document == None:
-        await event.respond(f"Файл не приложен к сообщению")
-        return
-    file = await event.message.download_media(file=COOKIES_FILE)
-    await event.respond(f"Записан файл {COOKIES_FILE}")
-
-
-# *****************************************************************************
-# Обработка команды создания файла cookies по имени и паролю
-# Обязательно нужно убедиться, что файл присылает админ
-@client.on(events.NewMessage(pattern="/create_cookies (.+) (.+)"))
-async def message_create_cookies(event):
-    user_id = event.sender_id
-    if not await check_user_right("/create_cookies", user_id, True):
-        return
-    usr_pass_array = event.text.replace("/create_cookies ", "").split(" ")
-    if len(usr_pass_array) != 2:
-        await event.respond(f"Неверный формат команды")
+    text = event.text
+    if not await check_user_right(text, user_id, True):
         return
 
-    cmd = (
-        f"{CREATE_COOKIES_COMMAND_LITRES} -b firefox --telegram-api {BOT_TOKEN} "
-        f" --telegram-chatid {event.chat_id} --cookies-file {COOKIES_FILE} "
-        f" -u {usr_pass_array[0]} -p {usr_pass_array[1]} "
-    )
-    proc = await asyncio.create_subprocess_shell(cmd)
-    await proc.communicate()
+    for downloader in settings.downloaders:
+        if not hasattr(downloader, "admin_commands"):
+            continue
+        for admin_command in downloader.admin_commands:
+            if text.startswith(admin_command.id):
+                if admin_command.command == "load_cookies":
+                    await upload_file(event, downloader.cookies_filename)
+                    return
+                elif admin_command.command == "create_cookies":
+                    await create_cookies_file(
+                        event, admin_command.exec_file, downloader.cookies_filename
+                    )
+                    return
 
 
 # *****************************************************************************
@@ -341,6 +307,7 @@ async def message_create_cookies(event):
 @client.on(events.NewMessage(pattern="https://(.+)"))
 async def url_message(event):
     url = event.text
+    url_compare = url.replace("https://www.","https://")
     user_id = event.sender_id
     user_info = await get_user_info(user_id)
 
@@ -352,31 +319,31 @@ async def url_message(event):
         return
 
     cmd = ""
-    output_path = DOWNLOAD_PATH_AUDIOBOOKS
+    output_path = settings.audiobooks_path
     cover_prefix = ""
     metadata_prefix = ""
-    if "litres.ru" in url:
-        if DOWNLOAD_COMMAND_LITRES != "":
-            cmd = f"{DOWNLOAD_COMMAND_LITRES} --cookies-file {COOKIES_FILE} "
-            if "/book/" in url:
+    for downloader in settings.downloaders:
+        if not url_compare.startswith(downloader.url):
+            continue
+        
+        cmd = downloader.command
+        if hasattr(downloader, "cookies_filename"):
+            # Если для загрузки требуется файл cookies, 
+            # передаем его
+            cmd += f" --cookies-file {downloader.cookies_filename}"
+            
+        if hasattr(downloader, "text_book_url_pattern"):
+            if downloader.text_book_url_pattern in url:
                 # Будем скачивать текстовую, а не аудиокнигу
                 # меняем каталог загрузки, отключаем загрузку обложки
                 # и метаданных, отправляем файл книги в телеграм
-                output_path = DOWNLOAD_PATH_TEXTBOOKS
+                output_path = settings.textbooks_path
                 cover_prefix = "no-"
                 metadata_prefix = "no-"
                 cmd += " --send-fb2-via-telegram "
-    elif "https://yakniga.org" in url and DOWNLOAD_COMMAND_YAKNIGA != "":
-        cmd = DOWNLOAD_COMMAND_YAKNIGA
-    elif "https://akniga.org" in url and DOWNLOAD_COMMAND_AKNIGA != "":
-        cmd = DOWNLOAD_COMMAND_AKNIGA
-    elif "https://knigavuhe.org" in url and DOWNLOAD_COMMAND_KNIGAVUHE != "":
-        cmd = DOWNLOAD_COMMAND_KNIGAVUHE
-    elif "https://kot-baun.ru" in url and DOWNLOAD_COMMAND_KOT_BAUN != "":
-        cmd = DOWNLOAD_COMMAND_KOT_BAUN
-
+                
     common_args = (
-        f" -vv --{cover_prefix}cover --{metadata_prefix}metadata --telegram-api {BOT_TOKEN} "
+        f" -vv --{cover_prefix}cover --{metadata_prefix}metadata --telegram-api {settings.telegram_bot_token} "
         f" --telegram-chatid {str(event.chat_id)} --output {output_path} --url {url} "
     )
 
@@ -394,16 +361,6 @@ async def url_message(event):
 
 
 # *****************************************************************************
-# Обработка url
-@client.on(events.NewMessage(pattern="/zomby"))
-async def zomby(event):
-    # subprocess.Popen("ls", shell=True)
-    proc = await asyncio.create_subprocess_shell("ls")
-
-    await proc.communicate()
-
-
-# *****************************************************************************
 # Обработка команды /start
 @client.on(events.NewMessage(pattern="/start"))
 async def start(event):
@@ -415,13 +372,14 @@ async def start(event):
         return
 
     if db.user_is_valid(db_session, sender_id):
-        await event.respond(cmd.hello_baner(user_info))
+        await event.respond(dialogs.hello_baner(user_info))
         if db.user_is_admin(db_session, sender_id):
-            await event.respond("Команды", buttons=cmd.create_admin_start_buttons())
+            msg, buttons = dialogs.create_admin_start_message()
+            await event.respond(msg, buttons=buttons)
     else:
         await event.respond(
-            cmd.hello_baner_unreg(user_info),
-            buttons=cmd.create_unreg_buttons(sender_id),
+            dialogs.hello_baner_unreg(user_info),
+            buttons=dialogs.create_unreg_buttons(sender_id),
         )
 
 
@@ -431,6 +389,7 @@ if __name__ == "__main__":
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         level=logging.ERROR,
     )
+
     client.start()
     client.run_until_disconnected()
     db_session.close()

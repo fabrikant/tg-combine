@@ -1,11 +1,5 @@
 from telethon.tl.custom import Button
-from keys import (
-    DOWNLOAD_COMMAND_LITRES,
-    DOWNLOAD_COMMAND_AKNIGA,
-    DOWNLOAD_COMMAND_YAKNIGA,
-    DOWNLOAD_COMMAND_KNIGAVUHE,
-    DOWNLOAD_COMMAND_KOT_BAUN,
-)
+from tg_settings import settings
 
 
 # *****************************************************************************
@@ -32,18 +26,19 @@ def create_admin_user_edit_buttons(user_id):
 
 
 # *****************************************************************************
-def create_admin_start_buttons():
+def create_admin_start_message():
+    msg = "**Команды администратора:**"
+    for downloader in settings.downloaders:
+        if hasattr(downloader, "admin_commands"):
+            msg += f"\n__Для сайта **{downloader.name}**:__"
+            ind = 0
+            for admin_command in downloader.admin_commands:
+                ind +=1
+                msg += f"\n{ind}. {admin_command.description}"
+            
     btns = []
     btns.append([Button.inline("Список пользователей", data="/user_list")])
-    btns.append([Button.inline("Загрузить файл cookies", data="/upload_cookies")])
-    btns.append(
-        [
-            Button.inline(
-                "Создать cookies litres.ru user/password", data="/create_cookies"
-            )
-        ]
-    )
-    return btns
+    return msg, btns
 
 
 # *****************************************************************************
@@ -76,42 +71,17 @@ def hello_baner(user_info):
         "Вы зарегистрированы и можете пользоваться этим ботом.\n"
         "Он умеет скачивать книги. Просто отправьте "
         "ссылку на страницу с книгой в этот чат.\n"
+        f"\n{settings.banner_addition}\n\n"
         "**Скачивать можно:**\n"
     )
     ind = 0
-    if DOWNLOAD_COMMAND_LITRES != "":
+    for downloader in settings.downloaders:
         ind += 1
-        msg += (
-            f"{ind}. С сайта https://litres.ru \n"
-            "**ВАЖНО!**\n__"
-            "    - Скачать можно только книги доступные по подписке (не те которые нужно покупать "
-            "или брать по абонементу)__\n"
-        )
-    if DOWNLOAD_COMMAND_AKNIGA != "":
-        ind += 1
-        msg += (
-            f"{ind}. С сайта https://akniga.org аудиокниги и серии аудиокниг\n"
-            "**ВАЖНО!**\n__"
-            "   -Скачивание с сайта https://akniga.org требует значительного времени__"
-            "\n"
-        )
-    if DOWNLOAD_COMMAND_YAKNIGA != "":
-        ind += 1
-        msg += f"{ind}. С сайта https://yakniga.org \n"
-    if DOWNLOAD_COMMAND_KNIGAVUHE != "":
-        ind += 1
-        msg += f"{ind}. С сайта https://knigavuhe.org \n"
-    if DOWNLOAD_COMMAND_KOT_BAUN != "":
-        ind += 1
-        msg += f"{ind}. С сайта https://kot-baun.ru \n"
-
+        msg += f"{ind}. С сайта {downloader.url} \n"
+        if hasattr(downloader, "banner_addition"):
+            msg += f"**ВАЖНО!**\n__{downloader.banner_addition}__\n"
     if ind == 0:
         msg += "Ниоткуда нельзя скачивать!!!"
-    else:
-        msg += (
-            "**Аудиокниги доступны по адресу: https://books.n-drive.cf **\n"
-            "**Текстовые книги будут отправлены в телеграм ответным сообщением**"
-        )
     return msg
 
 

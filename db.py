@@ -1,5 +1,4 @@
 import datetime
-from keys import ADMIN_ID, ADMIN_NAME
 from sqlalchemy import (
     Column,
     Integer,
@@ -42,12 +41,12 @@ class Books(Base):
         pass
 
 
-def create_database(connection_string):
+def create_database(connection_string, admin_id, admin_name):
     engine = create_engine(connection_string, echo=True)
     Base.metadata.create_all(engine)
     session = Session(bind=engine)
     get_or_create(
-        session, Users, False, id=ADMIN_ID, name=ADMIN_NAME, admin=True, blocked=False
+        session, Users, False, id=admin_id, name=admin_name, admin=True, blocked=False
     )
     return session
 

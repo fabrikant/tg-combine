@@ -1,0 +1,75 @@
+---
+# Нужно пообщаться с https://t.me/BotFather и получить токен
+telegram_bot_token: 7896541230:AAOYss5_yKc546684G0
+
+# На my.telegram.org нужно зарегестрировать приложение
+telegram_api_id: "20471786"
+telegram_api_hash: "2ef44t45g0d211jhukuhjkjih"
+
+# Ваш id в телеграм. Можно спросить у какого-нибудь бота. Например @getmyid_bot
+# должно быть числом, а не строкой (без кавычек)
+admin_id: 9874563210
+admin_name: ЛюбоеИмяАдминстратораДляОтображенияВБазеДАнных
+
+# Полный путь к файлу базы данных. Используется sqlite3
+db_filename: "/your/path/tg-combine.db"
+
+#Текст отображается в ответе на команду /start
+banner_addition: "**Аудиокниги доступны по адресу: https://url_вашего_сайта_с_книгами \nТекстовые книги будут отправлены в телеграм ответным сообщением**"
+
+# Пути к файлам загрузки
+audiobooks_path: "/your/path/Downloads/abooks"
+textbooks_path: "/your/path/Downloads/text_books"
+
+#Используемый браузер firefox или chrome. Лучше firefox
+browser: firefox
+
+# Ниже идут обработчики загрузок с разных сайтов.
+# Если какие-то не нужны, можно закоментировать или удалить
+downloaders:
+  
+  # Утилита загрузки с сайта litres.ru (https://github.com/fabrikant/litres_downloader)
+  # Самая сложная настройка. 
+  # НУЖНО менять в соответствии с реальным расположением файлов параметры:
+  # command, cookies_filename, admin_commands.exec_file 
+  # НЕЛЬЗЯ менять:
+  # admin_commands.command и admin_commands.id
+  # Остальное если понимаете зачем
+  - name: litres
+    url: https://litres.ru
+    text_book_url_pattern: "/book/"
+    # Команда загрузчика
+    command: "your/path/litres_downloader/download-book.sh"
+    # Путь к файлу cookies
+    cookies_filename: "/your/path/cookies.json"
+    banner_addition: "- Скачать можно только книги доступные по подписке (не те которые нужно покупать или брать по абонементу)"
+    admin_commands:
+      - id: "/command_litres_upload_cookies"
+        description: "**Загрузить файл cookies:** отправьте сообщение с командой /command_litres_upload_cookies и вложенным файлом"
+        command: load_cookies
+      - id: "/command_litres_create_cookies"
+        description: "**Создать файл cookies на сервере:** /command_litres_create_cookies user password"
+        command: create_cookies
+        # Команда создания файл cookies по имени пользователя и паролю
+        exec_file: "/your/path/litres_downloader/create-cookies.sh"
+
+  # Утилита загрузки с сайта akniga.org (https://github.com/fabrikant/akniga_downloader)
+  - name: akniga
+    url: https://akniga.org
+    command: "/your/path/akniga_downloader/download-book.sh"
+    banner_addition: "-Скачивание с сайта https://akniga.org требует значительного времени"
+  
+  # Утилита загрузки с сайта knigavuhe.org (https://github.com/fabrikant/knigavuhe_downloader.git)
+  - name: knigavuhe
+    url: https://knigavuhe.org
+    command: "/your/path/knigavuhe_downloader/download-book.sh"
+  
+  # Утилита загрузки с сайта yakniga.org (https://github.com/fabrikant/yakniga_downloader.git)
+  - name: yakniga
+    url: https://yakniga.org
+    command: "/your/path/yakniga_downloader/download-book.sh"
+  
+  # Утилита загрузки с сайта knigavuhe.org (https://github.com/fabrikant/kot_baun_downloader.git)
+  - name: kot_baun
+    url: https://kot-baun.ru
+    command: "/your/path/kot_baun_downloader/download-book.sh"
