@@ -75,3 +75,23 @@ python3 tg_combine.py
     А в качесестве команды указать что-то вроде:
 
     ```command: 'python3 "C:\Путь\к\качалке\download_book.py"'```
+
+# Запуск бота как службы (сервиса) systemd на Linux
+1. Поместить папку с программой в место постоянного пребывания
+1. Перейти в папку и выполнить команду:
+    ```bash
+    ./install.sh
+    ```
+    В результате в папке с программой будет сформирован файл с  **tg-combine.service**
+1. Выполнить следующие команды:
+    ```bash
+    sudo mv tg-combine.service /etc/systemd/system/tg-combine.service
+    sudo systemctl enable tg-combine.service
+    sudo service tg-combine start 
+    ```
+1. Для удаления службы выполнить команды:
+    ```bash
+    sudo service tg-combine stop
+    sudo systemctl disable tg-combine.service
+    sudo rm /etc/systemd/system/tg-combine.service
+    ```
