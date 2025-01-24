@@ -82,7 +82,7 @@ python3 tg_combine.py
     ```bash
     ./install.sh
     ```
-    В результате в папке с программой будет сформирован файл с  **tg-combine.service**
+    В результате в папке с программой будет сформирован файл **tg-combine.service**
 1. Выполнить следующие команды:
     ```bash
     sudo mv tg-combine.service /etc/systemd/system/tg-combine.service
