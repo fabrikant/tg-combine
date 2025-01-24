@@ -89,7 +89,7 @@ async def user_list(event):
     db_query = db_session.query(db.Users).order_by(db.Users.name).all()
     msg = ""
     for db_user in db_query:
-        msg += dialogs.user_about_baner(db_user)
+        msg += dialogs.user_about_banner(db_user)
     await event.respond(msg)
 
 
@@ -130,7 +130,7 @@ async def reg_decline(event):
 
         # Читаем пользователя из базы и выводим новые значения
         db_user = db_session.query(db.Users).filter_by(id=cmd_user_id).first()
-        msg = f"Новые значения:\n{dialogs.user_about_baner(db_user)}"
+        msg = f"Новые значения:\n{dialogs.user_about_banner(db_user)}"
         await event.respond(msg)
 
     # Удаление пользователя из базы
@@ -220,7 +220,7 @@ async def block_user(event):
         blocked=True,
     )
 
-    await client.send_message(unreg_user_id, dialogs.you_blocked_baner())
+    await client.send_message(unreg_user_id, dialogs.you_blocked_banner())
     await event.respond(f"Пользователь {unreg_user_info} заблокирован в системе")
 
 
@@ -236,7 +236,7 @@ async def registration_query(event):
     sender_info = await get_user_info(sender)
 
     if db.user_is_blocked(db_session, sender_id):
-        await event.respond(dialogs.you_blocked_baner())
+        await event.respond(dialogs.you_blocked_banner())
         return
     if db.user_is_valid(db_session, sender_id):
         await event.respond("Вы уже зарегистрированы")
@@ -272,7 +272,7 @@ async def edit_user(event):
     db_user = db_session.query(db.Users).filter_by(id=edit_user_id).first()
     await client.send_message(
         user_id,
-        f"Редактирование пользователя\n{dialogs.user_about_baner(db_user)}",
+        f"Редактирование пользователя\n{dialogs.user_about_banner(db_user)}",
         buttons=dialogs.create_admin_user_edit_buttons(edit_user_id),
     )
 
@@ -372,13 +372,13 @@ async def start(event):
         return
 
     if db.user_is_valid(db_session, sender_id):
-        await event.respond(dialogs.hello_baner(user_info))
+        await event.respond(dialogs.hello_banner(user_info))
         if db.user_is_admin(db_session, sender_id):
             msg, buttons = dialogs.create_admin_start_message()
             await event.respond(msg, buttons=buttons)
     else:
         await event.respond(
-            dialogs.hello_baner_unreg(user_info),
+            dialogs.hello_banner_unreg(user_info),
             buttons=dialogs.create_unreg_buttons(sender_id),
         )
 

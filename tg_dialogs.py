@@ -65,7 +65,7 @@ def create_unreg_buttons(user_id):
 
 
 # *****************************************************************************
-def hello_baner(user_info):
+def hello_banner(user_info):
     msg = (
         f"Привет, {user_info}!\n"
         "Вы зарегистрированы и можете пользоваться этим ботом.\n"
@@ -86,7 +86,7 @@ def hello_baner(user_info):
 
 
 # *****************************************************************************
-def hello_baner_unreg(user_info):
+def hello_banner_unreg(user_info):
     return (
         f"Привет, {user_info}, вы не зарегистрированны.\n"
         "Попросить администратора добавить вас в список пользователей?"
@@ -94,12 +94,12 @@ def hello_baner_unreg(user_info):
 
 
 # *****************************************************************************
-def you_blocked_baner():
+def you_blocked_banner():
     return "К сожалению, вы заблокированы!"
 
 
 # *****************************************************************************
-def user_about_baner(db_user):
+def user_about_banner(db_user):
     return (
         f"/edit_user_{db_user.id}\n"
         f"    name: {db_user.name}\n"
