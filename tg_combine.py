@@ -106,7 +106,7 @@ async def downloads_list(event):
         db_session.query(db.Books, db.Users)
         .join(db.Users, db.Users.id == db.Books.user, isouter=True)
         .order_by(db.Books.date.desc())
-        .limit(50)
+        .limit(20)
     )
 
     msg = ""
