@@ -94,6 +94,28 @@ async def user_list(event):
 
 
 # *****************************************************************************
+# Нажата inline кнопка /downloads_list
+# Убеждаемся, что пользователь - админ и ответным сообщением выводим список
+@client.on(events.CallbackQuery(data=b"/downloads_list"))
+async def downloads_list(event):
+    str_command = event.data.decode("utf-8")
+    user_id = event.sender_id
+    if not await check_user_right(str_command, user_id, need_admin_rights=True):
+        return
+    db_query = (
+        db_session.query(db.Books, db.Users)
+        .join(db.Users, db.Users.id == db.Books.user, isouter=True)
+        .order_by(db.Books.date.desc())
+        .limit(50)
+    )
+
+    msg = ""
+    for db_record in db_query:
+        msg += dialogs.downloads_banner(db_record)
+    await event.respond(msg)
+
+
+# *****************************************************************************
 # Нажата одна из кнопок редактирования пользователя /uedit.
 # Убеждаемся, что команду дал админ и редактируем мы не главного админа,
 # тот, который settings.admin_id.
@@ -307,7 +329,7 @@ async def admin_command(event):
 @client.on(events.NewMessage(pattern="https://(.+)"))
 async def url_message(event):
     url = event.text
-    url_compare = url.replace("https://www.","https://")
+    url_compare = url.replace("https://www.", "https://")
     user_id = event.sender_id
     user_info = await get_user_info(user_id)
 
@@ -325,13 +347,13 @@ async def url_message(event):
     for downloader in settings.downloaders:
         if not url_compare.startswith(downloader.url):
             continue
-        
+
         cmd = downloader.command
         if hasattr(downloader, "cookies_filename"):
-            # Если для загрузки требуется файл cookies, 
+            # Если для загрузки требуется файл cookies,
             # передаем его
             cmd += f" --cookies-file {downloader.cookies_filename}"
-            
+
         if hasattr(downloader, "text_book_url_pattern"):
             if downloader.text_book_url_pattern in url:
                 # Будем скачивать текстовую, а не аудиокнигу
@@ -341,7 +363,7 @@ async def url_message(event):
                 cover_prefix = "no-"
                 metadata_prefix = "no-"
                 cmd += " --send-fb2-via-telegram "
-                
+
     common_args = (
         f" -vv --{cover_prefix}cover --{metadata_prefix}metadata --telegram-api {settings.telegram_bot_token} "
         f" --telegram-chatid {str(event.chat_id)} --output {output_path} --url {url} "

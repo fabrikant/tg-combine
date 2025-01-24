@@ -33,11 +33,12 @@ def create_admin_start_message():
             msg += f"\n__Для сайта **{downloader.name}**:__"
             ind = 0
             for admin_command in downloader.admin_commands:
-                ind +=1
+                ind += 1
                 msg += f"\n{ind}. {admin_command.description}"
-            
+
     btns = []
     btns.append([Button.inline("Список пользователей", data="/user_list")])
+    btns.append([Button.inline("Последние загрузки", data="/downloads_list")])
     return msg, btns
 
 
@@ -105,4 +106,13 @@ def user_about_banner(db_user):
         f"    name: {db_user.name}\n"
         f"    admin:{db_user.admin}\n"
         f"    blocked:{db_user.blocked}\n"
+    )
+
+
+# *****************************************************************************
+def downloads_banner(db_record):
+    return (
+        f"{db_record.Books.url}\n"
+        f"    user:  {db_record.Books.user} ({db_record.Users.name})\n"
+        f"    date: {db_record.Books.date.strftime("%d.%m.%Y %H:%M:%S")}\n"
     )
