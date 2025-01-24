@@ -1,5 +1,6 @@
 settings.json
 settings.yml
+tg-combine.service
 .venv
 .vscode
 keys.py
