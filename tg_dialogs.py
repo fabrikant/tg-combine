@@ -39,6 +39,7 @@ def create_admin_start_message():
     btns = []
     btns.append([Button.inline("Список пользователей", data="/user_list")])
     btns.append([Button.inline("Последние загрузки", data="/downloads_list")])
+    btns.append([Button.inline("Последние команды", data="/commands_list")])
     return msg, btns
 
 
@@ -115,4 +116,12 @@ def downloads_banner(db_record):
         f"{db_record.Books.url}\n"
         f"    user:  {db_record.Books.user} ({db_record.Users.name})\n"
         f"    date: {db_record.Books.date.strftime("%d.%m.%Y %H:%M:%S")}\n"
+    )
+
+# *****************************************************************************
+def commands_banner(db_record):
+    return (
+        f"{db_record.CommandsHistory.command}\n"
+        f"    user:  {db_record.CommandsHistory.user} ({db_record.Users.name})\n"
+        f"    date: {db_record.CommandsHistory.date.strftime("%d.%m.%Y %H:%M:%S")}\n"
     )

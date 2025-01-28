@@ -112,6 +112,33 @@ async def downloads_list(event):
     msg = ""
     for db_record in db_query:
         msg += dialogs.downloads_banner(db_record)
+    if msg == "":
+        msg = "Отсутствует история загрузок"
+
+    await event.respond(msg)
+
+
+# *****************************************************************************
+# Нажата inline кнопка /commands_list
+# Убеждаемся, что пользователь - админ и ответным сообщением выводим список
+@client.on(events.CallbackQuery(data=b"/commands_list"))
+async def commands_list(event):
+    str_command = event.data.decode("utf-8")
+    user_id = event.sender_id
+    if not await check_user_right(str_command, user_id, need_admin_rights=True):
+        return
+    db_query = (
+        db_session.query(db.CommandsHistory, db.Users)
+        .join(db.Users, db.Users.id == db.CommandsHistory.user, isouter=True)
+        .order_by(db.CommandsHistory.date.desc())
+        .limit(20)
+    )
+
+    msg = ""
+    for db_record in db_query:
+        msg += dialogs.commands_banner(db_record)
+    if msg == "":
+        msg = "Отсутствует история команд"
     await event.respond(msg)
 
 
@@ -314,6 +341,11 @@ async def admin_command(event):
             continue
         for admin_command in downloader.admin_commands:
             if text.startswith(admin_command.id):
+                # Запись команды в историю
+                if settings.admin_commands_history:
+                    db.add_command_history_record(db_session, user=user_id, command=text)
+                
+                # Выполнение команды
                 if admin_command.command == "load_cookies":
                     await upload_file(event, downloader.cookies_filename)
                     return
@@ -404,6 +436,12 @@ async def start(event):
             buttons=dialogs.create_unreg_buttons(sender_id),
         )
 
+# *****************************************************************************
+# Обработка команды /get_my_id
+@client.on(events.NewMessage(pattern="/get_my_id"))
+async def get_my_id(event):
+    sender_id = event.sender_id
+    await event.respond(f"Ваш id:\n{sender_id}")
 
 # *****************************************************************************
 if __name__ == "__main__":

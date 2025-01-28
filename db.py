@@ -41,6 +41,14 @@ class Books(Base):
         pass
 
 
+class CommandsHistory(Base):
+    __tablename__ = "commands_history"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user = Column(Integer, ForeignKey("users.id"))
+    command = Column(String, nullable=False)
+    date = Column(DateTime, nullable=False)
+
+
 def create_database(connection_string, admin_id, admin_name):
     engine = create_engine(connection_string, echo=True)
     Base.metadata.create_all(engine)
@@ -75,7 +83,11 @@ def add_book_record(session, user, url):
     session.add_all([record])
     session.commit()
 
-
+def add_command_history_record(session, user, command):
+    record = CommandsHistory(user=user, command=command, date=datetime.datetime.now())
+    session.add_all([record])
+    session.commit()
+    
 def get_user(session, id):
     return session.query(Users).filter_by(id=id).first()
 
