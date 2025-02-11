@@ -343,8 +343,10 @@ async def admin_command(event):
             if text.startswith(admin_command.id):
                 # Запись команды в историю
                 if settings.admin_commands_history:
-                    db.add_command_history_record(db_session, user=user_id, command=text)
-                
+                    db.add_command_history_record(
+                        db_session, user=user_id, command=text
+                    )
+
                 # Выполнение команды
                 if admin_command.command == "load_cookies":
                     await upload_file(event, downloader.cookies_filename)
@@ -361,7 +363,6 @@ async def admin_command(event):
 @client.on(events.NewMessage(pattern="https://(.+)"))
 async def url_message(event):
     url = event.text
-    url_compare = url.replace("https://www.", "https://")
     user_id = event.sender_id
     user_info = await get_user_info(user_id)
 
@@ -377,7 +378,20 @@ async def url_message(event):
     cover_prefix = ""
     metadata_prefix = ""
     for downloader in settings.downloaders:
-        if not url_compare.startswith(downloader.url):
+
+        # if not url_compare.startswith(downloader.url):
+        #     continue
+        url_is_valid = False
+        if url.startswith(downloader.url):
+            url_is_valid = True
+        else:
+            if hasattr(downloader,"url_synonyms"):
+                for url_syn in downloader.url_synonyms:
+                    if url.startswith(url_syn):
+                        url_is_valid = True
+                        break
+
+        if not url_is_valid:
             continue
 
         cmd = downloader.command
@@ -436,12 +450,14 @@ async def start(event):
             buttons=dialogs.create_unreg_buttons(sender_id),
         )
 
+
 # *****************************************************************************
 # Обработка команды /get_my_id
 @client.on(events.NewMessage(pattern="/get_my_id"))
 async def get_my_id(event):
     sender_id = event.sender_id
     await event.respond(f"Ваш id:\n{sender_id}")
+
 
 # *****************************************************************************
 if __name__ == "__main__":

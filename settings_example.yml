@@ -24,24 +24,27 @@ textbooks_path: "/your/path/Downloads/text_books"
 #Используемый браузер firefox или chrome. Лучше firefox
 browser: firefox
 
-# Сохранять выполняемые админстративные команды в базе данных. 
-# Использовать с осторожностью. Команды могут содержать 
+# Сохранять выполняемые админстративные команды в базе данных.
+# Использовать с осторожностью. Команды могут содержать
 # конфиденциальные данные
 admin_commands_history: False
 
 # Ниже идут обработчики загрузок с разных сайтов.
 # Если какие-то не нужны, можно закоментировать или удалить
 downloaders:
-  
   # Утилита загрузки с сайта litres.ru (https://github.com/fabrikant/litres_downloader)
-  # Самая сложная настройка. 
+  # Самая сложная настройка.
   # НУЖНО менять в соответствии с реальным расположением файлов параметры:
-  # command, cookies_filename, admin_commands.exec_file 
+  # command, cookies_filename, admin_commands.exec_file
   # НЕЛЬЗЯ менять:
   # admin_commands.command и admin_commands.id
   # Остальное если понимаете зачем
   - name: litres
     url: https://litres.ru
+    # Добавляем возможные синонимы url
+    url_synonyms:
+      - https://www.litres.ru
+      - https://subscription.litres.ru
     # По умолчанию считается, что грузим аудиокнигу, но если в адресе есть такая
     # подстрока, то это текст
     text_book_url_pattern: "/book/"
@@ -65,17 +68,17 @@ downloaders:
     url: https://akniga.org
     command: "/your/path/trivial_audiobooks_downloader/download-book.sh"
     banner_addition: "-Скачивание с сайта https://akniga.org требует значительного времени"
-  
+
   # Утилита загрузки с сайта knigavuhe.org (https://github.com/fabrikant/trivial_audiobooks_downloader.git)
   - name: knigavuhe
     url: https://knigavuhe.org
     command: "/your/path/knigavuhtrivial_audiobooks_downloadere_downloader/download-book.sh"
-  
+
   # Утилита загрузки с сайта yakniga.org (https://github.com/fabrikant/trivial_audiobooks_downloader.git)
   - name: yakniga
     url: https://yakniga.org
     command: "/your/path/trivial_audiobooks_downloader/download-book.sh"
-  
+
   # Утилита загрузки с сайта knigavuhe.org (https://github.com/fabrikant/trivial_audiobooks_downloader.git)
   - name: kot_baun
     url: https://kot-baun.ru
