@@ -5,6 +5,7 @@ from telethon import TelegramClient, events
 import re
 import asyncio
 from tg_settings import settings
+from litres_key_gen import keygen
 
 db_session = db.create_database(
     f"sqlite:///{settings.db_filename}", settings.admin_id, settings.admin_name
@@ -359,6 +360,20 @@ async def admin_command(event):
 
 
 # *****************************************************************************
+# генерация ключа для  garmin плеера литрем
+@client.on(events.NewMessage(pattern="(.+)@(.+).(.+)"))
+async def litres_garmin_app_keygen(event):
+    email = event.text
+    user_id = event.sender_id
+
+    if not await check_user_right(email, user_id, need_admin_rights=True):
+        return
+
+    key = keygen(email)
+    await event.respond(key)
+
+
+# *****************************************************************************
 # Обработка url
 @client.on(events.NewMessage(pattern="https://(.+)"))
 async def url_message(event):
@@ -385,7 +400,7 @@ async def url_message(event):
         if url.startswith(downloader.url):
             url_is_valid = True
         else:
-            if hasattr(downloader,"url_synonyms"):
+            if hasattr(downloader, "url_synonyms"):
                 for url_syn in downloader.url_synonyms:
                     if url.startswith(url_syn):
                         url_is_valid = True
