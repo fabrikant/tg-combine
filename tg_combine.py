@@ -337,31 +337,33 @@ async def admin_command(event):
     if not await check_user_right(text, user_id, True):
         return
 
-    for downloader in settings.downloaders:
-        if not hasattr(downloader, "admin_commands"):
-            continue
-        for admin_command in downloader.admin_commands:
-            if text.startswith(admin_command.id):
-                # Запись команды в историю
-                if settings.admin_commands_history:
-                    db.add_command_history_record(
-                        db_session, user=user_id, command=text
-                    )
+    if hasattr(settings, 'downloaders'):
+        if isinstance(settings.downloaders, list):
+            for downloader in settings.downloaders:
+                if not hasattr(downloader, "admin_commands"):
+                    continue
+                for admin_command in downloader.admin_commands:
+                    if text.startswith(admin_command.id):
+                        # Запись команды в историю
+                        if settings.admin_commands_history:
+                            db.add_command_history_record(
+                                db_session, user=user_id, command=text
+                            )
 
-                # Выполнение команды
-                if admin_command.command == "load_cookies":
-                    await upload_file(event, downloader.cookies_filename)
-                    return
-                elif admin_command.command == "create_cookies":
-                    await create_cookies_file(
-                        event, admin_command.exec_file, downloader.cookies_filename
-                    )
-                    return
+                        # Выполнение команды
+                        if admin_command.command == "load_cookies":
+                            await upload_file(event, downloader.cookies_filename)
+                            return
+                        elif admin_command.command == "create_cookies":
+                            await create_cookies_file(
+                                event, admin_command.exec_file, downloader.cookies_filename
+                            )
+                            return
 
 
 # *****************************************************************************
-# генерация ключа для  garmin плеера литрем
-@client.on(events.NewMessage(pattern="(.+)@(.+).(.+)"))
+# генерация ключа для garmin плеера литреc
+@client.on(events.NewMessage(pattern="/commands_orange (.+)@(.+).(.+)"))
 async def litres_garmin_app_keygen(event):
     email = event.text
     user_id = event.sender_id
@@ -392,38 +394,41 @@ async def url_message(event):
     output_path = settings.audiobooks_path
     cover_prefix = ""
     metadata_prefix = ""
-    for downloader in settings.downloaders:
 
-        # if not url_compare.startswith(downloader.url):
-        #     continue
-        url_is_valid = False
-        if url.startswith(downloader.url):
-            url_is_valid = True
-        else:
-            if hasattr(downloader, "url_synonyms"):
-                for url_syn in downloader.url_synonyms:
-                    if url.startswith(url_syn):
-                        url_is_valid = True
-                        break
+    if hasattr(settings, 'downloaders'):
+        if isinstance(settings.downloaders, list):
+            for downloader in settings.downloaders:
 
-        if not url_is_valid:
-            continue
+                # if not url_compare.startswith(downloader.url):
+                #     continue
+                url_is_valid = False
+                if url.startswith(downloader.url):
+                    url_is_valid = True
+                else:
+                    if hasattr(downloader, "url_synonyms"):
+                        for url_syn in downloader.url_synonyms:
+                            if url.startswith(url_syn):
+                                url_is_valid = True
+                                break
 
-        cmd = downloader.command
-        if hasattr(downloader, "cookies_filename"):
-            # Если для загрузки требуется файл cookies,
-            # передаем его
-            cmd += f" --cookies-file {downloader.cookies_filename}"
+                if not url_is_valid:
+                    continue
 
-        if hasattr(downloader, "text_book_url_pattern"):
-            if downloader.text_book_url_pattern in url:
-                # Будем скачивать текстовую, а не аудиокнигу
-                # меняем каталог загрузки, отключаем загрузку обложки
-                # и метаданных, отправляем файл книги в телеграм
-                output_path = settings.textbooks_path
-                cover_prefix = "no-"
-                metadata_prefix = "no-"
-                cmd += " --send-fb2-via-telegram "
+                cmd = downloader.command
+                if hasattr(downloader, "cookies_filename"):
+                    # Если для загрузки требуется файл cookies,
+                    # передаем его
+                    cmd += f" --cookies-file {downloader.cookies_filename}"
+
+                if hasattr(downloader, "text_book_url_pattern"):
+                    if downloader.text_book_url_pattern in url:
+                        # Будем скачивать текстовую, а не аудиокнигу
+                        # меняем каталог загрузки, отключаем загрузку обложки
+                        # и метаданных, отправляем файл книги в телеграм
+                        output_path = settings.textbooks_path
+                        cover_prefix = "no-"
+                        metadata_prefix = "no-"
+                        cmd += " --send-fb2-via-telegram "
 
     common_args = (
         f" -vv --{cover_prefix}cover --{metadata_prefix}metadata --telegram-api {settings.telegram_bot_token} "

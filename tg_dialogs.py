@@ -28,13 +28,18 @@ def create_admin_user_edit_buttons(user_id):
 # *****************************************************************************
 def create_admin_start_message():
     msg = "**Команды администратора:**"
-    for downloader in settings.downloaders:
-        if hasattr(downloader, "admin_commands"):
-            msg += f"\n__Для сайта **{downloader.name}**:__"
-            ind = 0
-            for admin_command in downloader.admin_commands:
-                ind += 1
-                msg += f"\n{ind}. {admin_command.description}"
+
+    if hasattr(settings, "downloaders"):
+        if isinstance(settings.downloaders, list):
+            for downloader in settings.downloaders:
+                if hasattr(downloader, "admin_commands"):
+                    msg += f"\n__Для сайта **{downloader.name}**:__"
+                    ind = 0
+                    for admin_command in downloader.admin_commands:
+                        ind += 1
+                        msg += f"\n{ind}. {admin_command.description}"
+
+    msg += f"\n\n__Для генерации ключа для **Audiobooks Orange**:__\n/commands_orange АдресЭлектроннойПочты"
 
     btns = []
     btns.append([Button.inline("Список пользователей", data="/user_list")])
@@ -77,11 +82,13 @@ def hello_banner(user_info):
         "**Скачивать можно:**\n"
     )
     ind = 0
-    for downloader in settings.downloaders:
-        ind += 1
-        msg += f"{ind}. С сайта {downloader.url} \n"
-        if hasattr(downloader, "banner_addition"):
-            msg += f"**ВАЖНО!**\n__{downloader.banner_addition}__\n"
+    if hasattr(settings, "downloaders"):
+        if isinstance(settings.downloaders, list):
+            for downloader in settings.downloaders:
+                ind += 1
+                msg += f"{ind}. С сайта {downloader.url} \n"
+                if hasattr(downloader, "banner_addition"):
+                    msg += f"**ВАЖНО!**\n__{downloader.banner_addition}__\n"
     if ind == 0:
         msg += "Ниоткуда нельзя скачивать!!!"
     return msg
@@ -117,6 +124,7 @@ def downloads_banner(db_record):
         f"    user:  {db_record.Books.user} ({db_record.Users.name})\n"
         f"    date: {db_record.Books.date.strftime("%d.%m.%Y %H:%M:%S")}\n"
     )
+
 
 # *****************************************************************************
 def commands_banner(db_record):

@@ -19,7 +19,7 @@
 
 Скачиваем любым способом исходный код. Например:  
 ```bash
-git clone https://github.com/fabrikant/yakniga_downloader.git
+git clone https://github.com/fabrikant/tg-combine.git
 ```
 Переходим в каталог с исходным кодом и выполняем команду  
 **Linux:**
