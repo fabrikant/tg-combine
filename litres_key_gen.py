@@ -1,4 +1,5 @@
 from hashlib import sha256
+import re
 
 
 def shake_string(str_to_shake):
@@ -19,10 +20,24 @@ def str_to_sha256(str_to_hash):
     return hash
 
 
-def keygen(str_to_key):
-    key = str_to_sha256(shake_string(str_to_key))
+def extract_email(text):
+    email_regex = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+    # Поиск первого совпадения
+    match = re.search(email_regex, text)
+    if match:
+        return match.group(0)  # Возвращаем найденную строку
+    else:
+        return None  # Возвращаем None, если адрес не найден
 
-    return key[8:28]
+
+def keygen(str_to_key):
+    email = extract_email(str_to_key)
+
+    if email == None:
+        return "В качестве параметра необходимо передать email"
+    else:
+        key = str_to_sha256(shake_string(email))
+        return key[8:28]
 
 
 # print(keygen("litres202502@n-drive.cf"))
